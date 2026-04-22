@@ -1,0 +1,349 @@
+"use client";
+
+/**
+ * app/dashboard/page.tsx
+ * -----------------------
+ * GHL Custom Page — embedded as an iframe inside GoHighLevel.
+ *
+ * Flow:
+ *  1. On mount, calls window.parent.postMessage to request SSO details
+ *  2. GHL injects window.exposeSessionDetails() in the iframe context
+ *  3. The encrypted key is POSTed to /api/auth/sso for server-side decryption
+ *  4. locationId + userId are used to trigger the generation pipeline
+ */
+
+import { useEffect, useState, useCallback } from "react";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface SSOSession {
+  locationId: string;
+  userId: string;
+  companyId?: string;
+  userName?: string;
+  email?: string;
+}
+
+interface GenerateResult {
+  success: boolean;
+  fileUrl?: string;
+  fileName?: string;
+  funnelCount?: number;
+  pageCount?: number;
+  redirect?: { path: string; targetUrl: string } | null;
+  preview?: string;
+  error?: string;
+  details?: string;
+}
+
+type Status = "idle" | "loading-sso" | "ready" | "generating" | "done" | "error";
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export default function DashboardPage() {
+  const [status, setStatus] = useState<Status>("idle");
+  const [session, setSession] = useState<SSOSession | null>(null);
+  const [siteName, setSiteName] = useState("");
+  const [siteDescription, setSiteDescription] = useState("");
+  const [domainId, setDomainId] = useState("");
+  const [baseUrl, setBaseUrl] = useState("");
+  const [result, setResult] = useState<GenerateResult | null>(null);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  // ── SSO Decryption ─────────────────────────────────────────────────────────
+
+  const decryptSSO = useCallback(async (encryptedKey: string) => {
+    setStatus("loading-sso");
+    try {
+      const resp = await fetch("/api/auth/sso", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: encryptedKey }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.session) throw new Error(data.error ?? "SSO failed");
+      setSession(data.session);
+      setStatus("ready");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "SSO decryption failed";
+      setErrorMsg(msg);
+      setStatus("error");
+    }
+  }, []);
+
+  // ── Mount: attempt GHL SSO ─────────────────────────────────────────────────
+
+  useEffect(() => {
+    // GHL injects exposeSessionDetails into the iframe's window
+    const w = window as Window &
+      typeof globalThis & {
+        exposeSessionDetails?: () => { sessionDetails: { key: string } };
+      };
+
+    if (typeof w.exposeSessionDetails === "function") {
+      const { sessionDetails } = w.exposeSessionDetails();
+      if (sessionDetails?.key) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        decryptSSO(sessionDetails.key);
+        return;
+      }
+    }
+
+    // Fallback: read locationId from query string (dev / direct URL)
+    const params = new URLSearchParams(window.location.search);
+    const locationId = params.get("locationId");
+    if (locationId) {
+      setSession({ locationId, userId: "dev-user" });
+      setStatus("ready");
+      return;
+    }
+
+    setErrorMsg(
+      "Could not obtain SSO context. Open this page from inside GoHighLevel."
+    );
+    setStatus("error");
+  }, [decryptSSO]);
+
+  // ── Generation Pipeline ────────────────────────────────────────────────────
+
+  const handleGenerate = async () => {
+    if (!session?.locationId || !siteName.trim()) return;
+    setStatus("generating");
+    setResult(null);
+
+    try {
+      const resp = await fetch("/api/llms/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          locationId: session.locationId,
+          siteName: siteName.trim(),
+          siteDescription: siteDescription.trim() || undefined,
+          domainId: domainId.trim() || undefined,
+          baseUrl: baseUrl.trim() || undefined,
+        }),
+      });
+
+      const data: GenerateResult = await resp.json();
+      setResult(data);
+      setStatus(data.success ? "done" : "error");
+      if (!data.success) setErrorMsg(data.error ?? "Generation failed");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Network error";
+      setErrorMsg(msg);
+      setStatus("error");
+    }
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  return (
+    <main className="dashboard-root">
+      {/* Header */}
+      <header className="dash-header">
+        <div className="dash-logo">
+          <span className="logo-icon">⚡</span>
+          <span className="logo-text">llms.txt Generator</span>
+        </div>
+        {session && (
+          <div className="dash-badge">
+            <span className="badge-dot" />
+            <span>{session.locationId}</span>
+          </div>
+        )}
+      </header>
+
+      <div className="dash-body">
+        {/* ── SSO Loading ───────────────────────────────────────────────── */}
+        {status === "loading-sso" && (
+          <div className="state-card">
+            <div className="spinner" />
+            <p className="state-label">Authenticating via GoHighLevel SSO…</p>
+          </div>
+        )}
+
+        {/* ── Error ────────────────────────────────────────────────────── */}
+        {status === "error" && !result && (
+          <div className="state-card error-card">
+            <span className="state-icon">⚠️</span>
+            <p className="state-label">{errorMsg}</p>
+            {!session && (
+              <a href="/api/auth/ghl" className="btn btn-primary mt-4">
+                Re-authorize with GoHighLevel
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* ── Ready / Generating / Done ────────────────────────────────── */}
+        {(status === "ready" || status === "generating" || status === "done") && (
+          <div className="form-card">
+            <h2 className="form-title">Generate your llms.txt</h2>
+            <p className="form-subtitle">
+              We&apos;ll scan all your funnels and pages, build a standards-compliant{" "}
+              <code>llms.txt</code> file, upload it to your media library, and
+              optionally create a <code>/llms.txt</code> redirect on your domain.
+            </p>
+
+            <div className="form-grid">
+              <div className="field">
+                <label htmlFor="siteName" className="field-label">
+                  Site Name <span className="required">*</span>
+                </label>
+                <input
+                  id="siteName"
+                  className="field-input"
+                  type="text"
+                  placeholder="My Awesome Business"
+                  value={siteName}
+                  onChange={(e) => setSiteName(e.target.value)}
+                  disabled={status === "generating"}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="siteDescription" className="field-label">
+                  Site Description
+                  <span className="optional"> (optional)</span>
+                </label>
+                <textarea
+                  id="siteDescription"
+                  className="field-input field-textarea"
+                  placeholder="A brief one-line summary of what your business does…"
+                  value={siteDescription}
+                  onChange={(e) => setSiteDescription(e.target.value)}
+                  disabled={status === "generating"}
+                  rows={2}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="baseUrl" className="field-label">
+                  Site Base URL
+                  <span className="optional"> (optional)</span>
+                </label>
+                <input
+                  id="baseUrl"
+                  className="field-input"
+                  type="url"
+                  placeholder="https://yourdomain.com"
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                  disabled={status === "generating"}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="domainId" className="field-label">
+                  Domain ID
+                  <span className="optional"> (optional — for /llms.txt redirect)</span>
+                </label>
+                <input
+                  id="domainId"
+                  className="field-input"
+                  type="text"
+                  placeholder="GHL Domain ID from your funnel settings"
+                  value={domainId}
+                  onChange={(e) => setDomainId(e.target.value)}
+                  disabled={status === "generating"}
+                />
+              </div>
+            </div>
+
+            <button
+              id="generateBtn"
+              className={`btn btn-primary btn-lg ${
+                status === "generating" ? "btn-loading" : ""
+              }`}
+              onClick={handleGenerate}
+              disabled={status === "generating" || !siteName.trim()}
+            >
+              {status === "generating" ? (
+                <>
+                  <span className="btn-spinner" />
+                  Generating…
+                </>
+              ) : (
+                "⚡ Generate llms.txt"
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* ── Result ────────────────────────────────────────────────────── */}
+        {status === "done" && result?.success && (
+          <div className="result-card">
+            <div className="result-header">
+              <span className="result-icon">✅</span>
+              <div>
+                <h3 className="result-title">llms.txt Generated!</h3>
+                <p className="result-sub">
+                  Scanned{" "}
+                  <strong>{result.funnelCount}</strong> funnels /{" "}
+                  <strong>{result.pageCount}</strong> pages
+                </p>
+              </div>
+            </div>
+
+            <div className="result-url-block">
+              <span className="result-url-label">Hosted File URL</span>
+              <a
+                href={result.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="result-url"
+              >
+                {result.fileUrl}
+              </a>
+            </div>
+
+            {result.redirect && (
+              <div className="result-redirect">
+                <span className="redirect-badge">301 Redirect Created</span>
+                <code>{result.redirect.path} → {result.redirect.targetUrl}</code>
+              </div>
+            )}
+
+            {result.preview && (
+              <details className="preview-block">
+                <summary className="preview-summary">Preview (first 500 chars)</summary>
+                <pre className="preview-content">{result.preview}</pre>
+              </details>
+            )}
+
+            <button
+              className="btn btn-secondary mt-4"
+              onClick={() => {
+                setStatus("ready");
+                setResult(null);
+              }}
+            >
+              Generate Again
+            </button>
+          </div>
+        )}
+
+        {/* ── Error after generation attempt ───────────────────────────── */}
+        {status === "error" && result && (
+          <div className="state-card error-card">
+            <span className="state-icon">❌</span>
+            <p className="state-label">{result.error}</p>
+            {result.details && (
+              <pre className="error-details">{result.details}</pre>
+            )}
+            <button
+              className="btn btn-secondary mt-4"
+              onClick={() => {
+                setStatus("ready");
+                setResult(null);
+                setErrorMsg("");
+              }}
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
