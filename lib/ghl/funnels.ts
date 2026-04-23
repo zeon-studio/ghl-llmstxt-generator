@@ -18,8 +18,16 @@ export interface GHLFunnel {
   url?: string;
   domainId?: string;
   isDeleted?: boolean;
-  dateAdded?: string;
-  dateUpdated?: string;
+  steps?: GHLFunnelStep[];
+}
+
+export interface GHLFunnelStep {
+  id?: string;
+  _id?: string;
+  name: string;
+  url?: string;
+  pathName?: string;
+  isDeleted?: boolean;
 }
 
 export interface GHLFunnelPage {
@@ -28,7 +36,6 @@ export interface GHLFunnelPage {
   url?: string;
   pathName?: string;
   funnelId: string;
-  stepId?: string;
   isDeleted?: boolean;
 }
 
@@ -38,67 +45,51 @@ export interface FunnelWithPages extends GHLFunnel {
 
 // ─── API Calls ────────────────────────────────────────────────────────────────
 
-/** Fetch all funnels for a location */
-async function fetchFunnels(
-  locationId: string,
-  accessToken: string
-): Promise<GHLFunnel[]> {
-  const resp = await axios.get(`${API_BASE}/funnels/funnel/list`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Version: "2021-07-28",
-    },
-    params: { locationId, limit: 100 },
-  });
-  return resp.data?.funnels ?? [];
-}
-
-/** Fetch all pages for a specific funnel */
-async function fetchFunnelPages(
-  locationId: string,
-  funnelId: string,
-  accessToken: string
-): Promise<GHLFunnelPage[]> {
-  const resp = await axios.get(`${API_BASE}/funnels/page`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Version: "2021-07-28",
-    },
-    params: { locationId, funnelId, limit: 100 },
-  });
-  return (resp.data?.pages ?? []).map((p: GHLFunnelPage) => ({
-    ...p,
-    funnelId,
-  }));
-}
-
-// ─── Main Discovery Function ──────────────────────────────────────────────────
-
 /**
  * Discovers all funnels and their pages for a given location.
- * Pages are fetched in parallel for performance.
+ * Uses the single 'list' endpoint which includes nested steps/pages.
  */
 export async function discoverFunnelsAndPages(
   locationId: string,
   accessToken: string
 ): Promise<FunnelWithPages[]> {
-  const funnels = await fetchFunnels(locationId, accessToken);
+  console.log(`[Discovery] Fetching funnels for location: ${locationId}`);
+  
+  const resp = await axios.get(`${API_BASE}/funnels/funnel/list`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Version: "2021-07-28",
+    },
+    params: { locationId, limit: 20, offset: 0 },
+  });
 
-  const activeFunnels = funnels.filter((f) => !f.isDeleted);
+  const rawFunnels = resp.data?.funnels ?? [];
+  console.log(`[Discovery] GHL returned ${rawFunnels.length} funnels.`);
 
-  const results = await Promise.all(
-    activeFunnels.map(async (funnel) => {
-      const pages = await fetchFunnelPages(
-        locationId,
-        funnel.id,
-        accessToken
-      );
+  const results: FunnelWithPages[] = rawFunnels
+    .filter((f: GHLFunnel & { _id?: string }) => !f.isDeleted)
+    .map((f: GHLFunnel & { _id?: string }) => {
+      const funnelId = f.id || f._id || "";
+      
+      // Extract steps as pages
+      const pages: GHLFunnelPage[] = (f.steps ?? [])
+        .filter((s: GHLFunnelStep) => !s.isDeleted)
+        .map((s: GHLFunnelStep) => ({
+          id: s.id || s._id || "",
+          name: s.name || "Untitled Page",
+          pathName: s.pathName,
+          url: s.url,
+          funnelId,
+        }));
+
       return {
-        ...funnel,
-        pages: pages.filter((p) => !p.isDeleted),
-      } as FunnelWithPages;
-    })
-  );
+        id: funnelId,
+        name: f.name,
+        url: f.url,
+        domainId: f.domainId,
+        pages,
+      };
+    });
 
   return results;
 }

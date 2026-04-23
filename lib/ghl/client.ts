@@ -21,26 +21,52 @@ export interface TokenSession {
 
 // ─── In-Memory Session Storage ────────────────────────────────────────────────
 
-const sessions = new Map<string, TokenSession>();
+import fs from "fs";
+import path from "path";
+
+const SESSION_FILE = path.join(process.cwd(), "sessions.json");
+
+function loadSessions(): Map<string, TokenSession> {
+  try {
+    if (fs.existsSync(SESSION_FILE)) {
+      const data = fs.readFileSync(SESSION_FILE, "utf-8");
+      return new Map(Object.entries(JSON.parse(data)));
+    }
+  } catch (e) {
+    console.error("Failed to load sessions:", e);
+  }
+  return new Map();
+}
+
+function saveSessions(map: Map<string, TokenSession>) {
+  try {
+    const data = JSON.stringify(Object.fromEntries(map));
+    fs.writeFileSync(SESSION_FILE, data, "utf-8");
+  } catch (e) {
+    console.error("Failed to save sessions:", e);
+  }
+}
 
 export const sessionStorage = {
-  /** Save or update a session keyed by locationId */
   set(locationId: string, session: TokenSession): void {
+    const sessions = loadSessions();
     sessions.set(locationId, session);
+    saveSessions(sessions);
   },
 
-  /** Retrieve a session by locationId */
   get(locationId: string): TokenSession | undefined {
+    const sessions = loadSessions();
     return sessions.get(locationId);
   },
 
-  /** Delete a session (on logout / revoke) */
   delete(locationId: string): void {
+    const sessions = loadSessions();
     sessions.delete(locationId);
+    saveSessions(sessions);
   },
 
-  /** List all active locationIds */
   keys(): string[] {
+    const sessions = loadSessions();
     return Array.from(sessions.keys());
   },
 };
@@ -75,8 +101,10 @@ export function buildAuthorizationUrl(state?: string): string {
   const clientId = process.env.GHL_CLIENT_ID!;
 
   const scopes = [
-    "funnels.readonly",
-    "funnels.write",
+    "funnels/funnel.readonly",
+    "funnels/page.readonly",
+    "funnels/redirect.readonly",
+    "funnels/redirect.write",
     "medias.readonly",
     "medias.write",
     "locations.readonly",
@@ -87,6 +115,9 @@ export function buildAuthorizationUrl(state?: string): string {
     redirect_uri: redirectUri,
     client_id: clientId,
     scope: scopes,
+    ...(process.env.GHL_APP_VERSION_ID
+      ? { version_id: process.env.GHL_APP_VERSION_ID }
+      : {}),
     ...(state ? { state } : {}),
   });
 

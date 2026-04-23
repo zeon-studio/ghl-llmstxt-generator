@@ -14,11 +14,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import axios from "axios";
 import { sessionStorage } from "@/lib/ghl/client";
 import { discoverFunnelsAndPages } from "@/lib/ghl/funnels";
 import { generateLlmsTxt, getLlmsTxtFilename } from "@/lib/ghl/llms-generator";
 import { uploadLlmsTxt } from "@/lib/ghl/media";
 import { createLlmsRedirect } from "@/lib/ghl/redirects";
+import { scrapeMetadata } from "@/lib/scraper";
 
 export const runtime = "nodejs";
 
@@ -33,8 +35,6 @@ interface GenerateRequestBody {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = (await request.json()) as Partial<GenerateRequestBody>;
-
-    // ── Validate required fields ───────────────────────────────────────────
     const { locationId, siteName, siteDescription, domainId, baseUrl } = body;
 
     if (!locationId) {
@@ -43,9 +43,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         { status: 400 }
       );
     }
-    if (!siteName) {
+
+    // ── Optional Scrape: If title/description are missing, try to fetch them ──
+    let finalSiteName = siteName?.trim();
+    let finalSiteDescription = siteDescription?.trim();
+
+    if (baseUrl && (!finalSiteName || !finalSiteDescription)) {
+      console.log(`[Generate] Scraping metadata from: ${baseUrl}`);
+      const meta = await scrapeMetadata(baseUrl);
+      if (!finalSiteName) finalSiteName = meta.title || "Untitled Site";
+      if (!finalSiteDescription) finalSiteDescription = meta.description;
+    }
+
+    if (!finalSiteName) {
       return NextResponse.json(
-        { error: "siteName is required" },
+        { error: "Site Name is required (could not be auto-detected)" },
         { status: 400 }
       );
     }
@@ -75,8 +87,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // ── Step 2: Generate llms.txt content ─────────────────────────────────
     const content = generateLlmsTxt(funnels, {
-      siteName,
-      siteDescription,
+      siteName: finalSiteName,
+      siteDescription: finalSiteDescription,
       locationId,
       baseUrl,
     });
@@ -95,13 +107,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
     console.log(`[Generate] Uploaded to: ${uploadResult.fileUrl}`);
 
-    // ── Step 4: Create /llms.txt redirect (optional — requires domainId) ──
+    // ── Step 4: Create /llms.txt redirect (requires domain name or baseUrl) ─────
     let redirectResult = null;
-    if (domainId) {
-      console.log("[Generate] Creating /llms.txt redirect rule...");
+    const targetDomain = domainId || baseUrl;
+
+    if (targetDomain) {
+      console.log(`[Generate] Creating /llms.txt redirect rule for domain: ${targetDomain}`);
       redirectResult = await createLlmsRedirect(
         locationId,
-        domainId,
+        targetDomain,
         uploadResult.fileUrl,
         accessToken
       );
@@ -118,13 +132,30 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       redirect: redirectResult,
       preview: content.slice(0, 500) + (content.length > 500 ? "..." : ""),
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[Generate] Pipeline error:", error);
-    const message =
-      error instanceof Error ? error.message : "Unknown error occurred";
+    
+    let status = 500;
+    let message = "Unknown error occurred";
+    let details = null;
+
+    if (axios.isAxiosError(error)) {
+      const ghlError = error.response?.data;
+      status = error.response?.status || 500;
+      message = ghlError?.message || error.message || "GHL API error";
+      details = ghlError?.errors || ghlError || null;
+    } else if (error instanceof Error) {
+      message = error.message;
+    }
+
     return NextResponse.json(
-      { error: "Generation pipeline failed", details: message },
-      { status: 500 }
+      { 
+        success: false,
+        error: "Generation pipeline failed", 
+        details: message,
+        ghlDetails: details 
+      },
+      { status }
     );
   }
 }

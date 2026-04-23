@@ -45,8 +45,7 @@ export default function DashboardPage() {
   const [session, setSession] = useState<SSOSession | null>(null);
   const [siteName, setSiteName] = useState("");
   const [siteDescription, setSiteDescription] = useState("");
-  const [domainId, setDomainId] = useState("");
-  const [baseUrl, setBaseUrl] = useState("");
+  const [siteDomain, setSiteDomain] = useState("");
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -107,7 +106,7 @@ export default function DashboardPage() {
   // ── Generation Pipeline ────────────────────────────────────────────────────
 
   const handleGenerate = async () => {
-    if (!session?.locationId || !siteName.trim()) return;
+    if (!session?.locationId || !siteDomain.trim()) return;
     setStatus("generating");
     setResult(null);
 
@@ -119,8 +118,8 @@ export default function DashboardPage() {
           locationId: session.locationId,
           siteName: siteName.trim(),
           siteDescription: siteDescription.trim() || undefined,
-          domainId: domainId.trim() || undefined,
-          baseUrl: baseUrl.trim() || undefined,
+          domainId: siteDomain.trim(), // We use this for both baseUrl and redirect
+          baseUrl: siteDomain.trim().startsWith('http') ? siteDomain.trim() : `https://${siteDomain.trim()}`,
         }),
       });
 
@@ -185,90 +184,78 @@ export default function DashboardPage() {
               optionally create a <code>/llms.txt</code> redirect on your domain.
             </p>
 
-            <div className="form-grid">
               <div className="field">
-                <label htmlFor="siteName" className="field-label">
-                  Site Name <span className="required">*</span>
+                <label htmlFor="siteDomain" className="field-label">
+                  Site Domain <span className="required">*</span>
                 </label>
                 <input
-                  id="siteName"
+                  id="siteDomain"
                   className="field-input"
                   type="text"
-                  placeholder="My Awesome Business"
-                  value={siteName}
-                  onChange={(e) => setSiteName(e.target.value)}
+                  placeholder="evangrayson.dev"
+                  value={siteDomain}
+                  onChange={(e) => setSiteDomain(e.target.value)}
                   disabled={status === "generating"}
                 />
+                <p className="field-hint">
+                  We&apos;ll automatically detect your site title and description.
+                </p>
               </div>
 
-              <div className="field">
-                <label htmlFor="siteDescription" className="field-label">
-                  Site Description
-                  <span className="optional"> (optional)</span>
-                </label>
-                <textarea
-                  id="siteDescription"
-                  className="field-input field-textarea"
-                  placeholder="A brief one-line summary of what your business does…"
-                  value={siteDescription}
-                  onChange={(e) => setSiteDescription(e.target.value)}
-                  disabled={status === "generating"}
-                  rows={2}
-                />
-              </div>
+              <details className="advanced-details">
+                <summary>Edit Site Details (Optional)</summary>
+                <div className="form-grid pt-4">
+                  <div className="field">
+                    <label htmlFor="siteName" className="field-label">
+                      Site Title
+                    </label>
+                    <input
+                      id="siteName"
+                      className="field-input"
+                      type="text"
+                      placeholder="Custom Title"
+                      value={siteName}
+                      onChange={(e) => setSiteName(e.target.value)}
+                      disabled={status === "generating"}
+                    />
+                  </div>
 
-              <div className="field">
-                <label htmlFor="baseUrl" className="field-label">
-                  Site Base URL
-                  <span className="optional"> (optional)</span>
-                </label>
-                <input
-                  id="baseUrl"
-                  className="field-input"
-                  type="url"
-                  placeholder="https://yourdomain.com"
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                  disabled={status === "generating"}
-                />
-              </div>
+                  <div className="field">
+                    <label htmlFor="siteDescription" className="field-label">
+                      Site Summary
+                    </label>
+                    <textarea
+                      id="siteDescription"
+                      className="field-input field-textarea"
+                      placeholder="Override the auto-detected description…"
+                      value={siteDescription}
+                      onChange={(e) => setSiteDescription(e.target.value)}
+                      disabled={status === "generating"}
+                      rows={2}
+                    />
+                  </div>
+                </div>
+              </details>
 
-              <div className="field">
-                <label htmlFor="domainId" className="field-label">
-                  Domain ID
-                  <span className="optional"> (optional — for /llms.txt redirect)</span>
-                </label>
-                <input
-                  id="domainId"
-                  className="field-input"
-                  type="text"
-                  placeholder="GHL Domain ID from your funnel settings"
-                  value={domainId}
-                  onChange={(e) => setDomainId(e.target.value)}
-                  disabled={status === "generating"}
-                />
-              </div>
+              <button
+                id="generateBtn"
+                className={`btn btn-primary btn-lg ${
+                  status === "generating" ? "btn-loading" : ""
+                }`}
+                onClick={handleGenerate}
+                disabled={status === "generating" || !siteDomain.trim()}
+              >
+                {status === "generating" ? (
+                  <>
+                    <span className="btn-spinner" />
+                    Generating…
+                  </>
+                ) : (
+                  "⚡ Generate llms.txt"
+                )}
+              </button>
             </div>
-
-            <button
-              id="generateBtn"
-              className={`btn btn-primary btn-lg ${
-                status === "generating" ? "btn-loading" : ""
-              }`}
-              onClick={handleGenerate}
-              disabled={status === "generating" || !siteName.trim()}
-            >
-              {status === "generating" ? (
-                <>
-                  <span className="btn-spinner" />
-                  Generating…
-                </>
-              ) : (
-                "⚡ Generate llms.txt"
-              )}
-            </button>
-          </div>
-        )}
+          )}
 
         {/* ── Result ────────────────────────────────────────────────────── */}
         {status === "done" && result?.success && (

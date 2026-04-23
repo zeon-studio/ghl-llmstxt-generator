@@ -20,7 +20,7 @@ Automatically generate and host a standards-compliant `llms.txt` file (following
 - An app created in the [GHL Marketplace](https://marketplace.gohighlevel.com/).
 
 ### 2. Environment Variables
-Create a `.env.local` file in the root directory (use `.env.local.example` as a template):
+Create a `.env` file in the root directory (use `.env.example` as a template):
 
 ```env
 GHL_CLIENT_ID="your_client_id"
@@ -28,6 +28,8 @@ GHL_CLIENT_SECRET="your_client_secret"
 GHL_SHARED_SECRET_KEY="your_shared_secret_key"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 GHL_REDIRECT_URI="http://localhost:3000/api/auth/callback"
+GHL_APP_VERSION_ID="your_app_version_id"
+GHL_BASE_URL="https://marketplace.leadconnectorhq.com"
 ```
 
 ### 3. Install Dependencies
@@ -70,7 +72,14 @@ Deploy your app to a provider like Vercel or Railway.
 ### 2. Update Marketplace App Settings
 In the [GHL Marketplace Console](https://marketplace.gohighlevel.com/):
 - **Redirect URI:** Update to `https://your-domain.com/api/auth/callback`.
-- **Scopes:** Ensure `funnels.readonly`, `funnels.write`, `medias.readonly`, `medias.write`, and `locations.readonly` are checked.
+- **Scopes:** Ensure the following are checked:
+    - `funnels/funnel.readonly`
+    - `funnels/page.readonly`
+    - `funnels/redirect.readonly`
+    - `funnels/redirect.write`
+    - `medias.readonly`
+    - `medias.write`
+    - `locations.readonly`
 - **Custom Page:** Set to `https://your-domain.com/dashboard`.
 
 ### 3. Submission

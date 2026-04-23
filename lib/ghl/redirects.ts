@@ -25,17 +25,16 @@ export interface RedirectResult {
  */
 export async function createLlmsRedirect(
   locationId: string,
-  domainId: string,
+  domainName: string,
   targetUrl: string,
   accessToken: string
 ): Promise<RedirectResult> {
   const payload = {
     locationId,
-    domainId,
+    domain: domainName.replace(/^https?:\/\//, "").replace(/\/$/, ""),
     path: "/llms.txt",
-    targetUrl,
-    action: "redirect",
-    statusCode: 301,
+    target: targetUrl,
+    action: "url",
   };
 
   const resp = await axios.post(`${API_BASE}/funnels/lookup/redirect`, payload, {
