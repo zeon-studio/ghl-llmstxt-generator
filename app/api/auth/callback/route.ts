@@ -79,6 +79,35 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const resolvedLocationId =
       locationId ?? tokenData.locationId ?? "unknown";
 
+    // ── Fetch Location Details ───────────────────────────────────────────
+    let locationDetails = {};
+    try {
+      if (resolvedLocationId !== "unknown") {
+        const locResp = await axios.get(
+          `${GHL_API_BASE}/locations/${resolvedLocationId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${tokenData.access_token}`,
+              Version: "2021-07-28",
+            },
+          }
+        );
+        const locData = locResp.data?.location;
+        if (locData) {
+          locationDetails = {
+            locationName: locData.name,
+            email: locData.email,
+            phone: locData.phone,
+            address: locData.address,
+            city: locData.city,
+            country: locData.country,
+          };
+        }
+      }
+    } catch (err) {
+      console.warn("[GHL Callback] Failed to fetch location details:", err);
+    }
+
     // ── Persist session ───────────────────────────────────────────────────
     const session: TokenSession = {
       accessToken: tokenData.access_token,
@@ -87,6 +116,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       locationId: resolvedLocationId,
       userId: tokenData.userId,
       companyId: tokenData.companyId,
+      ...locationDetails,
     };
 
     await sessionStorage.set(resolvedLocationId, session);

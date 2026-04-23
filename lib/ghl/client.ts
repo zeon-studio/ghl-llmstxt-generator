@@ -18,6 +18,12 @@ export interface TokenSession {
   locationId: string;
   userId?: string;
   companyId?: string;
+  locationName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  country?: string;
 }
 
 // ─── Supabase Session Storage ────────────────────────────────────────────────
@@ -72,6 +78,12 @@ export const sessionStorage = {
         expires_at: session.expiresAt,
         user_id: session.userId || null,
         company_id: session.companyId || null,
+        location_name: session.locationName || null,
+        email: session.email || null,
+        phone: session.phone || null,
+        address: session.address || null,
+        city: session.city || null,
+        country: session.country || null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "location_id" },
@@ -100,6 +112,12 @@ export const sessionStorage = {
       locationId: data.location_id,
       userId: data.user_id,
       companyId: data.company_id,
+      locationName: data.location_name,
+      email: data.email,
+      phone: data.phone,
+      address: data.address,
+      city: data.city,
+      country: data.country,
     };
 
     // Auto-refresh if token is expired or expires within 5 minutes
