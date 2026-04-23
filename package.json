@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@gohighlevel/api-client": "^2.2.2",
+    "@supabase/supabase-js": "^2.104.0",
     "axios": "^1.15.2",
     "cheerio": "^1.2.0",
     "crypto-js": "^4.2.0",

@@ -7,6 +7,7 @@
  */
 
 import HighLevel from "@gohighlevel/api-client";
+import axios from "axios";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -19,55 +20,126 @@ export interface TokenSession {
   companyId?: string;
 }
 
-// ─── In-Memory Session Storage ────────────────────────────────────────────────
+// ─── Supabase Session Storage ────────────────────────────────────────────────
 
-import fs from "fs";
-import path from "path";
+import { supabase } from "../supabase/client";
 
-const SESSION_FILE = path.join(process.cwd(), "sessions.json");
+const GHL_API_BASE =
+  process.env.GHL_API_BASE_URL ?? "https://services.leadconnectorhq.com";
 
-function loadSessions(): Map<string, TokenSession> {
-  try {
-    if (fs.existsSync(SESSION_FILE)) {
-      const data = fs.readFileSync(SESSION_FILE, "utf-8");
-      return new Map(Object.entries(JSON.parse(data)));
-    }
-  } catch (e) {
-    console.error("Failed to load sessions:", e);
+async function refreshAccessToken(
+  session: TokenSession,
+): Promise<TokenSession> {
+  if (!process.env.GHL_CLIENT_ID || !process.env.GHL_CLIENT_SECRET) {
+    throw new Error("Missing GHL credentials for token refresh");
   }
-  return new Map();
-}
 
-function saveSessions(map: Map<string, TokenSession>) {
-  try {
-    const data = JSON.stringify(Object.fromEntries(map));
-    fs.writeFileSync(SESSION_FILE, data, "utf-8");
-  } catch (e) {
-    console.error("Failed to save sessions:", e);
-  }
+  const tokenResp = await axios.post(
+    `${GHL_API_BASE}/oauth/token`,
+    new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: session.refreshToken,
+      client_id: process.env.GHL_CLIENT_ID,
+      client_secret: process.env.GHL_CLIENT_SECRET,
+    }),
+    {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    },
+  );
+
+  const data = tokenResp.data;
+
+  const newSession: TokenSession = {
+    ...session,
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    expiresAt: Date.now() + data.expires_in * 1000,
+  };
+
+  // Save the new session to Supabase
+  await sessionStorage.set(session.locationId, newSession);
+
+  return newSession;
 }
 
 export const sessionStorage = {
-  set(locationId: string, session: TokenSession): void {
-    const sessions = loadSessions();
-    sessions.set(locationId, session);
-    saveSessions(sessions);
+  async set(locationId: string, session: TokenSession): Promise<void> {
+    const { error } = await supabase.from("sessions").upsert(
+      {
+        location_id: locationId,
+        access_token: session.accessToken,
+        refresh_token: session.refreshToken,
+        expires_at: session.expiresAt,
+        user_id: session.userId || null,
+        company_id: session.companyId || null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "location_id" },
+    );
+
+    if (error) {
+      console.error("Failed to save session to Supabase:", error);
+    }
   },
 
-  get(locationId: string): TokenSession | undefined {
-    const sessions = loadSessions();
-    return sessions.get(locationId);
+  async get(locationId: string): Promise<TokenSession | undefined> {
+    const { data, error } = await supabase
+      .from("sessions")
+      .select("*")
+      .eq("location_id", locationId)
+      .single();
+
+    if (error || !data) {
+      return undefined;
+    }
+
+    let session: TokenSession = {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+      expiresAt: Number(data.expires_at),
+      locationId: data.location_id,
+      userId: data.user_id,
+      companyId: data.company_id,
+    };
+
+    // Auto-refresh if token is expired or expires within 5 minutes
+    if (Date.now() + 5 * 60 * 1000 >= session.expiresAt) {
+      try {
+        console.log(
+          `[Session] Token expired/expiring for location ${locationId}. Refreshing...`,
+        );
+        session = await refreshAccessToken(session);
+      } catch (err) {
+        console.error(
+          `[Session] Failed to refresh token for location ${locationId}:`,
+          err,
+        );
+        return undefined; // If refresh fails, return undefined so user must re-auth
+      }
+    }
+
+    return session;
   },
 
-  delete(locationId: string): void {
-    const sessions = loadSessions();
-    sessions.delete(locationId);
-    saveSessions(sessions);
+  async delete(locationId: string): Promise<void> {
+    const { error } = await supabase
+      .from("sessions")
+      .delete()
+      .eq("location_id", locationId);
+
+    if (error) {
+      console.error("Failed to delete session from Supabase:", error);
+    }
   },
 
-  keys(): string[] {
-    const sessions = loadSessions();
-    return Array.from(sessions.keys());
+  async keys(): Promise<string[]> {
+    const { data, error } = await supabase
+      .from("sessions")
+      .select("location_id");
+    if (error || !data) {
+      return [];
+    }
+    return data.map((row) => row.location_id);
   },
 };
 
@@ -94,7 +166,8 @@ export function getGHLClient(): InstanceType<typeof HighLevel> {
 
 /** Returns the OAuth authorization URL to redirect users to */
 export function buildAuthorizationUrl(state?: string): string {
-  const base = process.env.GHL_BASE_URL ?? "https://marketplace.gohighlevel.com";
+  const base =
+    process.env.GHL_BASE_URL ?? "https://marketplace.gohighlevel.com";
   const redirectUri =
     process.env.GHL_REDIRECT_URI ??
     `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;

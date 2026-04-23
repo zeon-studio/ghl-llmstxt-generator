@@ -72,7 +72,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // ── Retrieve access token ─────────────────────────────────────────────
-    const session = sessionStorage.get(locationId);
+    const session = await sessionStorage.get(locationId);
     if (!session) {
       return NextResponse.json(
         {

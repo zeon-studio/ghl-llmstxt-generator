@@ -89,7 +89,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       companyId: tokenData.companyId,
     };
 
-    sessionStorage.set(resolvedLocationId, session);
+    await sessionStorage.set(resolvedLocationId, session);
 
     console.log(
       `[GHL Callback] Token stored for locationId: ${resolvedLocationId}`
