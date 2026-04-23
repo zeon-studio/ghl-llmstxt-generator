@@ -51,7 +51,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (baseUrl && (!finalSiteName || !finalSiteDescription)) {
       console.log(`[Generate] Scraping metadata from: ${baseUrl}`);
       const meta = await scrapeMetadata(baseUrl);
-      if (!finalSiteName) finalSiteName = meta.title || "Untitled Site";
+      console.log(`[Generate] Scraped Metadata:`, meta);
+      if (!finalSiteName) {
+        if (meta.title) {
+          finalSiteName = meta.title;
+        } else {
+          // Fallback to Domain Name (e.g. evangrayson.dev -> Evangrayson)
+          const domainPart = baseUrl.replace(/^https?:\/\//, "").split(".")[0];
+          finalSiteName = domainPart.charAt(0).toUpperCase() + domainPart.slice(1);
+        }
+      }
       if (!finalSiteDescription) finalSiteDescription = meta.description;
     }
 
