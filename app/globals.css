@@ -71,6 +71,38 @@ pre {
 /* ── Utilities ────────────────────────────────────────────────────────────── */
 .mt-4  { margin-top: 1rem; }
 .mt-6  { margin-top: 1.5rem; }
+.flex-1 { flex: 1; }
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.preview-container {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: 1rem;
+}
+
+.preview-textarea {
+  width: 100%;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 1rem;
+  min-height: 320px;
+}
+
+.preview-textarea:focus {
+  box-shadow: none;
+  border-color: transparent;
+  color: var(--text);
+}
 
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
 .btn {

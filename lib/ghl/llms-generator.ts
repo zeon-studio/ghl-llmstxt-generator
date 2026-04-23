@@ -91,7 +91,8 @@ export function generateLlmsTxt(
 
 /**
  * Returns the filename to use when uploading to GHL Media.
+ * We include a timestamp to avoid CDN/Browser caching issues when re-generating.
  */
 export function getLlmsTxtFilename(): string {
-  return "llms.txt";
+  return `llms_${Date.now()}.txt`;
 }

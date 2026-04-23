@@ -30,6 +30,7 @@ interface GenerateRequestBody {
   siteDescription?: string;
   domainId?: string;
   baseUrl?: string;
+  previewOnly?: boolean;
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -105,6 +106,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       `[Generate] Generated ${content.length} chars of llms.txt content`
     );
 
+    // ── Step 2.5: Preview Only check ──────────────────────────────────────
+    if (body.previewOnly) {
+      return NextResponse.json({
+        success: true,
+        content,
+        funnelCount: funnels.length,
+        pageCount: funnels.reduce((n, f) => n + f.pages.length, 0),
+        preview: content.slice(0, 500) + (content.length > 500 ? "..." : ""),
+      });
+    }
+
     // ── Step 3: Upload to GHL Media Storage ───────────────────────────────
     const fileName = getLlmsTxtFilename();
     console.log("[Generate] Uploading to GHL Media Storage...");
@@ -139,6 +151,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       funnelCount: funnels.length,
       pageCount: funnels.reduce((n, f) => n + f.pages.length, 0),
       redirect: redirectResult,
+      content,
       preview: content.slice(0, 500) + (content.length > 500 ? "..." : ""),
     });
   } catch (error: unknown) {

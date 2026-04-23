@@ -32,11 +32,20 @@ interface GenerateResult {
   pageCount?: number;
   redirect?: { path: string; targetUrl: string } | null;
   preview?: string;
+  content?: string;
   error?: string;
   details?: string;
 }
 
-type Status = "idle" | "loading-sso" | "ready" | "generating" | "done" | "error";
+type Status =
+  | "idle"
+  | "loading-sso"
+  | "ready"
+  | "generating"
+  | "previewing"
+  | "pushing"
+  | "done"
+  | "error";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -47,6 +56,7 @@ export default function DashboardPage() {
   const [siteDescription, setSiteDescription] = useState("");
   const [siteDomain, setSiteDomain] = useState("");
   const [result, setResult] = useState<GenerateResult | null>(null);
+  const [generatedContent, setGeneratedContent] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
   // ── SSO Decryption ─────────────────────────────────────────────────────────
@@ -109,6 +119,7 @@ export default function DashboardPage() {
     if (!session?.locationId || !siteDomain.trim()) return;
     setStatus("generating");
     setResult(null);
+    setGeneratedContent("");
 
     try {
       const resp = await fetch("/api/llms/generate", {
@@ -118,15 +129,56 @@ export default function DashboardPage() {
           locationId: session.locationId,
           siteName: siteName.trim(),
           siteDescription: siteDescription.trim() || undefined,
-          domainId: siteDomain.trim(), // We use this for both baseUrl and redirect
-          baseUrl: siteDomain.trim().startsWith('http') ? siteDomain.trim() : `https://${siteDomain.trim()}`,
+          domainId: siteDomain.trim(),
+          baseUrl: siteDomain.trim().startsWith("http")
+            ? siteDomain.trim()
+            : `https://${siteDomain.trim()}`,
+          previewOnly: true,
         }),
       });
 
       const data: GenerateResult = await resp.json();
-      setResult(data);
-      setStatus(data.success ? "done" : "error");
-      if (!data.success) setErrorMsg(data.error ?? "Generation failed");
+      if (data.success && data.content) {
+        setGeneratedContent(data.content);
+        setResult(data);
+        setStatus("previewing");
+      } else {
+        setErrorMsg(data.error ?? "Generation failed");
+        setStatus("error");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Network error";
+      setErrorMsg(msg);
+      setStatus("error");
+    }
+  };
+
+  const handlePushToMedia = async () => {
+    if (!session?.locationId || !generatedContent) return;
+    setStatus("pushing");
+
+    try {
+      const resp = await fetch("/api/llms/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          locationId: session.locationId,
+          content: generatedContent,
+          domainId: siteDomain.trim(),
+          baseUrl: siteDomain.trim().startsWith("http")
+            ? siteDomain.trim()
+            : `https://${siteDomain.trim()}`,
+        }),
+      });
+
+      const data = await resp.json();
+      if (data.success) {
+        setResult((prev) => (prev ? { ...prev, ...data } : data));
+        setStatus("done");
+      } else {
+        setErrorMsg(data.error ?? "Upload failed");
+        setStatus("error");
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Network error";
       setErrorMsg(msg);
@@ -174,8 +226,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── Ready / Generating / Done ────────────────────────────────── */}
-        {(status === "ready" || status === "generating" || status === "done") && (
+        {/* ── Ready / Generating ────────────────────────────────── */}
+        {(status === "ready" || status === "generating") && (
           <div className="form-card">
             <h2 className="form-title">Generate your llms.txt</h2>
             <p className="form-subtitle">
@@ -256,6 +308,58 @@ export default function DashboardPage() {
               </button>
             </div>
           )}
+
+        {/* ── Previewing / Pushing ───────────────────────────────────────── */}
+        {(status === "previewing" || status === "pushing") && result && (
+          <div className="form-card preview-card">
+            <h2 className="form-title">Review llms.txt Content</h2>
+            <p className="form-subtitle">
+              Below is the generated content based on your funnels and pages.
+              Review it before pushing it to your site&apos;s media library.
+            </p>
+
+            <div className="preview-container">
+              <textarea
+                className="field-input preview-textarea"
+                value={generatedContent}
+                onChange={(e) => setGeneratedContent(e.target.value)}
+                rows={12}
+                spellCheck={false}
+              />
+            </div>
+
+            <div className="button-group mt-6">
+              <button
+                className={`btn btn-primary btn-lg flex-1 ${
+                  status === "pushing" ? "btn-loading" : ""
+                }`}
+                onClick={handlePushToMedia}
+                disabled={status === "pushing"}
+              >
+                {status === "pushing" ? (
+                  <>
+                    <span className="btn-spinner" />
+                    Pushing to Media…
+                  </>
+                ) : (
+                  "🚀 Push to Site Media"
+                )}
+              </button>
+              <button
+                className="btn btn-secondary btn-lg"
+                onClick={() => {
+                  setStatus("ready");
+                  setGeneratedContent("");
+                }}
+                disabled={status === "pushing"}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+
 
         {/* ── Result ────────────────────────────────────────────────────── */}
         {status === "done" && result?.success && (
