@@ -30,9 +30,14 @@ export default function DashboardPage() {
   useEffect(() => {
     // Read locationId from query string (passed by GHL iframe)
     const params = new URLSearchParams(window.location.search);
-    const locationId = params.get("locationId");
+    let locationId = params.get("locationId");
+
+    if (!locationId) {
+      locationId = localStorage.getItem("ghl_location_id");
+    }
 
     if (locationId) {
+      localStorage.setItem("ghl_location_id", locationId);
       const timer = setTimeout(() => {
         setSession({ locationId, userId: "user" });
         setStatus("ready");
