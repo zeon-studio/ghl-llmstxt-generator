@@ -1,6 +1,6 @@
-import { SSOSession } from "../types";
+import { GHLSession } from "../types";
 
-export function DashboardHeader({ session }: { session: SSOSession | null }) {
+export function DashboardHeader({ session }: { session: GHLSession | null }) {
   return (
     <header className="dash-header">
       <div className="dash-logo">

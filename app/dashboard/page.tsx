@@ -6,17 +6,17 @@
  * GHL Custom Page — embedded as an iframe inside GoHighLevel.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { GenerateForm } from "./components/GenerateForm";
 import { PreviewCard } from "./components/PreviewCard";
 import { ResultCard } from "./components/ResultCard";
 import { StatusDisplay } from "./components/StatusDisplay";
-import { GenerateResult, SSOSession, Status } from "./types";
+import { GenerateResult, GHLSession, Status } from "./types";
 
 export default function DashboardPage() {
   const [status, setStatus] = useState<Status>("idle");
-  const [session, setSession] = useState<SSOSession | null>(null);
+  const [session, setSession] = useState<GHLSession | null>(null);
   const [siteName, setSiteName] = useState("");
   const [siteDescription, setSiteDescription] = useState("");
   const [siteDomain, setSiteDomain] = useState("");
@@ -24,54 +24,16 @@ export default function DashboardPage() {
   const [generatedContent, setGeneratedContent] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  // ── SSO Decryption ─────────────────────────────────────────────────────────
-
-  const decryptSSO = useCallback(async (encryptedKey: string) => {
-    setStatus("loading-sso");
-    try {
-      const resp = await fetch("/api/auth/sso", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: encryptedKey }),
-      });
-      const data = await resp.json();
-      if (!resp.ok || !data.session)
-        throw new Error(data.error ?? "SSO failed");
-      setSession(data.session);
-      setStatus("ready");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "SSO decryption failed";
-      setErrorMsg(msg);
-      setStatus("error");
-    }
-  }, []);
-
   // ── Mount: attempt GHL SSO ─────────────────────────────────────────────────
 
   useEffect(() => {
-    // Define GHL global interface
-    interface GHLWindow extends Window {
-      exposeSessionDetails?: () => { sessionDetails: { key: string } };
-    }
-
-    const w = window as GHLWindow;
-    if (typeof w.exposeSessionDetails === "function") {
-      const { sessionDetails } = w.exposeSessionDetails();
-      if (sessionDetails?.key) {
-        // Use a small delay to avoid React's synchronous state update warning in Effect
-        const timer = setTimeout(() => {
-          decryptSSO(sessionDetails.key);
-        }, 0);
-        return () => clearTimeout(timer);
-      }
-    }
-
-    // Fallback: read locationId from query string (dev / direct URL)
+    // Read locationId from query string (passed by GHL iframe)
     const params = new URLSearchParams(window.location.search);
     const locationId = params.get("locationId");
+
     if (locationId) {
       const timer = setTimeout(() => {
-        setSession({ locationId, userId: "dev-user" });
+        setSession({ locationId, userId: "user" });
         setStatus("ready");
       }, 0);
       return () => clearTimeout(timer);
@@ -79,12 +41,12 @@ export default function DashboardPage() {
 
     const timer = setTimeout(() => {
       setErrorMsg(
-        "Could not obtain SSO context. Open this page from inside GoHighLevel.",
+        "Could not obtain location context. Ensure the page is opened from within GoHighLevel.",
       );
       setStatus("error");
     }, 0);
     return () => clearTimeout(timer);
-  }, [decryptSSO]);
+  }, []);
 
   // ── Generation Pipeline ────────────────────────────────────────────────────
 

@@ -1,21 +1,14 @@
-import { Status, SSOSession } from "../types";
+import { Status, GHLSession } from "../types";
 
 interface StatusDisplayProps {
   status: Status;
   errorMsg: string;
-  session: SSOSession | null;
+  session: GHLSession | null;
   onRetry?: () => void;
 }
 
 export function StatusDisplay({ status, errorMsg, session, onRetry }: StatusDisplayProps) {
-  if (status === "loading-sso") {
-    return (
-      <div className="state-card">
-        <div className="spinner" />
-        <p className="state-label">Authenticating via GoHighLevel SSO…</p>
-      </div>
-    );
-  }
+
 
   if (status === "error" && !onRetry) {
     return (

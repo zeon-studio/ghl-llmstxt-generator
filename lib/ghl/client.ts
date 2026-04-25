@@ -8,7 +8,6 @@
 
 import HighLevel from "@gohighlevel/api-client";
 import axios, { AxiosInstance } from "axios";
-import CryptoJS from "crypto-js";
 
 export const API_BASE = "https://services.leadconnectorhq.com";
 
@@ -250,29 +249,6 @@ export function buildAuthorizationUrl(state?: string): string {
 }
 
 /**
- * Decrypts an SSO key string received from the GHL iframe.
- */
-export function decryptSSOKey(encryptedKey: string): GHLSSOPayload | null {
-  const sharedSecret = process.env.GHL_SHARED_SECRET_KEY;
-  if (!sharedSecret) {
-    throw new Error(
-      "GHL_SHARED_SECRET_KEY is not set in environment variables"
-    );
-  }
-
-  try {
-    const bytes = CryptoJS.AES.decrypt(encryptedKey, sharedSecret);
-    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-
-    if (!decrypted) return null;
-
-    return JSON.parse(decrypted) as GHLSSOPayload;
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Exchanges an authorization code for access and refresh tokens.
  */
 export async function exchangeToken(code: string): Promise<TokenResponse> {
@@ -291,7 +267,7 @@ export async function exchangeToken(code: string): Promise<TokenResponse> {
     }),
     {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    }
+    },
   );
 
   return resp.data;

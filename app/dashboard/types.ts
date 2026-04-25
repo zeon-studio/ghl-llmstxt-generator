@@ -1,4 +1,4 @@
-export interface SSOSession {
+export interface GHLSession {
   locationId: string;
   userId: string;
   companyId?: string;
@@ -21,7 +21,6 @@ export interface GenerateResult {
 
 export type Status =
   | "idle"
-  | "loading-sso"
   | "ready"
   | "generating"
   | "previewing"
