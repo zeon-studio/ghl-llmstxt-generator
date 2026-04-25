@@ -44,18 +44,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 
 
-    console.log(`[Upload] Starting upload for locationId: ${activeLocationId}`);
+
 
     // ── Step 1: Upload to GHL Media Storage ───────────────────────────────
     const fileName = getLlmsTxtFilename();
-    console.log("[Upload] Uploading to GHL Media Storage...");
     const uploadResult = await uploadLlmsTxt(
       content,
       fileName,
       activeLocationId,
       accessToken
     );
-    console.log(`[Upload] Uploaded to: ${uploadResult.fileUrl}`);
 
     // ── Step 1.5: Cleanup old files (asynchronously) ─────────────────────
     cleanupOldLlmsFiles(activeLocationId, accessToken, uploadResult.fileId).catch(
@@ -67,14 +65,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const targetDomain = domainId || baseUrl;
 
     if (targetDomain) {
-      console.log(`[Upload] Creating /llms.txt redirect rule for domain: ${targetDomain}`);
       redirectResult = await createLlmsRedirect(
         activeLocationId,
         targetDomain,
         uploadResult.fileUrl,
         accessToken
       );
-      console.log("[Upload] Redirect created:", redirectResult);
     }
 
     return NextResponse.json({

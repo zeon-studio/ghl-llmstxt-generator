@@ -50,7 +50,6 @@ export async function discoverFunnelsAndPages(
   locationId: string,
   accessToken: string
 ): Promise<FunnelWithPages[]> {
-  console.log(`[Discovery] Fetching funnels for location: ${locationId}`);
   const client = getGhlClient(accessToken);
   
   const resp = await client.get("/funnels/funnel/list", {
@@ -58,7 +57,6 @@ export async function discoverFunnelsAndPages(
   });
 
   const rawFunnels = resp.data?.funnels ?? [];
-  console.log(`[Discovery] GHL returned ${rawFunnels.length} funnels.`);
 
   const results: FunnelWithPages[] = rawFunnels
     .filter((f: GHLFunnel & { _id?: string }) => !f.isDeleted)

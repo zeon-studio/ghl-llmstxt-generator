@@ -84,10 +84,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     await sessionStorage.set(resolvedLocationId, session);
 
-    console.log(
-      `[GHL Callback] Token stored for locationId: ${resolvedLocationId}`
-    );
-
     // ── Clear state cookie & redirect to dashboard ────────────────────────
     const dashboardUrl = new URL(
       `/dashboard?locationId=${resolvedLocationId}`,

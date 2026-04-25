@@ -13,13 +13,13 @@
  * Body: { locationId, siteName, siteDescription?, domainId?, baseUrl? }
  */
 
-import { NextRequest, NextResponse } from "next/server";
 import { getActiveSession, handleApiError } from "@/lib/api-utils";
 import { discoverFunnelsAndPages } from "@/lib/ghl/funnels";
 import { generateLlmsTxt, getLlmsTxtFilename } from "@/lib/ghl/llms-generator";
 import { uploadLlmsTxt } from "@/lib/ghl/media";
 import { createLlmsRedirect } from "@/lib/ghl/redirects";
 import { scrapeMetadata } from "@/lib/scraper";
+import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
@@ -47,16 +47,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     let finalSiteDescription = siteDescription?.trim();
 
     if (baseUrl && (!finalSiteName || !finalSiteDescription)) {
-      console.log(`[Generate] Scraping metadata from: ${baseUrl}`);
       const meta = await scrapeMetadata(baseUrl);
-      console.log(`[Generate] Scraped Metadata:`, meta);
       if (!finalSiteName) {
         if (meta.title) {
           finalSiteName = meta.title;
         } else {
-          // Fallback to Domain Name (e.g. evangrayson.dev -> Evangrayson)
           const domainPart = baseUrl.replace(/^https?:\/\//, "").split(".")[0];
-          finalSiteName = domainPart.charAt(0).toUpperCase() + domainPart.slice(1);
+          finalSiteName =
+            domainPart.charAt(0).toUpperCase() + domainPart.slice(1);
         }
       }
       if (!finalSiteDescription) finalSiteDescription = meta.description;
@@ -65,31 +63,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!finalSiteName) {
       return NextResponse.json(
         { error: "Site Name is required (could not be auto-detected)" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
 
 
-    console.log(`[Generate] Starting pipeline for locationId: ${activeLocationId}`);
-
     // ── Step 1: Discover funnels + pages ──────────────────────────────────
-    console.log("[Generate] Discovering funnels and pages...");
-    const funnels = await discoverFunnelsAndPages(activeLocationId, accessToken);
-    console.log(
-      `[Generate] Found ${funnels.length} funnels with ${funnels.reduce((n, f) => n + f.pages.length, 0)} pages total`
+    const funnels = await discoverFunnelsAndPages(
+      activeLocationId,
+      accessToken,
     );
 
-    // ── Step 2: Generate llms.txt content ─────────────────────────────────
     const content = generateLlmsTxt(funnels, {
       siteName: finalSiteName,
       siteDescription: finalSiteDescription,
       locationId: activeLocationId,
       baseUrl,
     });
-    console.log(
-      `[Generate] Generated ${content.length} chars of llms.txt content`
-    );
 
     // ── Step 2.5: Preview Only check ──────────────────────────────────────
     if (body.previewOnly) {
@@ -104,28 +95,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // ── Step 3: Upload to GHL Media Storage ───────────────────────────────
     const fileName = getLlmsTxtFilename();
-    console.log("[Generate] Uploading to GHL Media Storage...");
     const uploadResult = await uploadLlmsTxt(
       content,
       fileName,
       activeLocationId,
-      accessToken
+      accessToken,
     );
-    console.log(`[Generate] Uploaded to: ${uploadResult.fileUrl}`);
 
     // ── Step 4: Create /llms.txt redirect (requires domain name or baseUrl) ─────
     let redirectResult = null;
     const targetDomain = domainId || baseUrl;
 
     if (targetDomain) {
-      console.log(`[Generate] Creating /llms.txt redirect rule for domain: ${targetDomain}`);
       redirectResult = await createLlmsRedirect(
         activeLocationId,
         targetDomain,
         uploadResult.fileUrl,
-        accessToken
+        accessToken,
       );
-      console.log("[Generate] Redirect created:", redirectResult);
     }
 
     // ── Success response ──────────────────────────────────────────────────

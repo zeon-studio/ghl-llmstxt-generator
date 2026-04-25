@@ -160,9 +160,6 @@ export const sessionStorage = {
     // Auto-refresh if token is expired or expires within 5 minutes
     if (Date.now() + 5 * 60 * 1000 >= session.expiresAt) {
       try {
-        console.log(
-          `[Session] Token expired/expiring for location ${locationId}. Refreshing...`,
-        );
         session = await refreshAccessToken(session);
       } catch (err) {
         console.error(

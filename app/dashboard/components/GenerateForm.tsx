@@ -40,7 +40,7 @@ export function GenerateForm({
           id="siteDomain"
           className="field-input"
           type="text"
-          placeholder="evangrayson.dev"
+          placeholder="example.com"
           value={siteDomain}
           onChange={(e) => setSiteDomain(e.target.value)}
           disabled={isGenerating}

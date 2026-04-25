@@ -65,8 +65,6 @@ export async function createLlmsRedirect(
       const status = error.response?.status;
 
       if ((status === 400 || status === 422) && isDuplicate) {
-        console.log("[Redirect] Rule already exists, searching for ID to update...");
-        
         let existing = null;
         let currentOffset = 0;
         let hasMore = true;
@@ -78,7 +76,6 @@ export async function createLlmsRedirect(
 
           // GHL actually returns the array inside `data`, not `redirects`
           const redirects: GHLRedirect[] = listResp.data?.data || listResp.data?.redirects || [];
-          console.log(`[Redirect] Fetched ${redirects.length} redirects at offset ${currentOffset}`);
           
           if (redirects.length === 0) break;
 
@@ -97,7 +94,6 @@ export async function createLlmsRedirect(
 
         if (existing) {
           const redirectId = existing._id || existing.id;
-          console.log(`[Redirect] Found existing redirect ID: ${redirectId}. Updating...`);
           await client.patch(
             `/funnels/lookup/redirect/${redirectId}`,
             {

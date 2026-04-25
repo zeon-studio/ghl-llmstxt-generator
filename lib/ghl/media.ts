@@ -87,7 +87,6 @@ export async function cleanupOldLlmsFiles(
 ) {
   try {
     const client = getGhlClient(accessToken);
-    console.log(`[Media] Cleaning up old llms.txt files for location: ${locationId}`);
     
     const resp = await client.get("/medias/files", {
       params: {
@@ -116,11 +115,10 @@ export async function cleanupOldLlmsFiles(
     });
 
     if (oldFiles.length === 0) {
-      console.log("[Media] No old files found to clean up.");
       return;
     }
 
-    console.log(`[Media] Found ${oldFiles.length} old files. Deleting...`);
+
 
     for (const file of oldFiles) {
       const idsToTry = [...new Set([file.id, file._id, file.fileId, file.file_id, file.uid].filter(Boolean) as string[])];
@@ -145,7 +143,6 @@ export async function cleanupOldLlmsFiles(
         for (const variant of endpointVariants) {
           try {
             await client.delete(variant);
-            console.log(`[Media Cleanup] Successfully deleted ${id} via ${variant}`);
             deleted = true;
             break; // Stop trying variations for this ID
           } catch {
