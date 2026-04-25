@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "GHL llms.txt Plugin – AI-Ready Pages for GoHighLevel",
@@ -12,7 +12,14 @@ export default function LandingPage() {
     <main className="landing-root">
       <div className="landing-inner">
         {/* Badge */}
-        <span className="landing-badge">⚡ GoHighLevel Marketplace App</span>
+        <span className="landing-badge">
+          <img
+            src="/icon.png"
+            alt=""
+            style={{ width: "16px", height: "16px", borderRadius: "2px" }}
+          />
+          GoHighLevel Marketplace App
+        </span>
 
         {/* Title */}
         <h1 className="landing-title">
@@ -24,8 +31,7 @@ export default function LandingPage() {
         {/* Description */}
         <p className="landing-desc">
           This plugin scans all your GoHighLevel funnels and pages, generates a
-          standards-compliant{" "}
-          <code>llms.txt</code> file following{" "}
+          standards-compliant <code>llms.txt</code> file following{" "}
           <a
             href="https://llmstxt.org"
             target="_blank"
@@ -38,7 +44,11 @@ export default function LandingPage() {
 
         {/* CTAs */}
         <div className="landing-actions">
-          <a href="/api/auth/ghl" className="btn btn-primary btn-lg" style={{ width: "auto", padding: "0.9rem 2rem" }}>
+          <a
+            href="/api/auth/ghl"
+            className="btn btn-primary btn-lg"
+            style={{ width: "auto", padding: "0.9rem 2rem" }}
+          >
             Connect GoHighLevel
           </a>
           <Link
@@ -85,8 +95,31 @@ export default function LandingPage() {
         </div>
 
         <p className="landing-footer">
-          Requires GoHighLevel sub-account access · No data stored on our servers
+          Requires GoHighLevel sub-account access · No data stored on our
+          servers
         </p>
+
+        <footer
+          style={{
+            marginTop: "4rem",
+            borderTop: "1px solid var(--border)",
+            paddingTop: "2rem",
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            gap: "2rem",
+            fontSize: "0.8rem",
+            color: "var(--text-dim)",
+          }}
+        >
+          <Link href="/privacy" style={{ color: "inherit" }}>
+            Privacy Policy
+          </Link>
+          <Link href="/terms" style={{ color: "inherit" }}>
+            Terms of Service
+          </Link>
+          <span>© 2026 GHL llms.txt Plugin</span>
+        </footer>
       </div>
     </main>
   );

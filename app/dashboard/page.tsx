@@ -12,6 +12,7 @@ import { GenerateForm } from "./components/GenerateForm";
 import { PreviewCard } from "./components/PreviewCard";
 import { ResultCard } from "./components/ResultCard";
 import { StatusDisplay } from "./components/StatusDisplay";
+import { Onboarding } from "./components/Onboarding";
 import { GenerateResult, GHLSession, Status } from "./types";
 
 export default function DashboardPage() {
@@ -138,6 +139,8 @@ export default function DashboardPage() {
 
       <div className="dash-body">
         <StatusDisplay status={status} errorMsg={errorMsg} session={session} />
+
+        {status === "ready" && <Onboarding />}
 
         {(status === "ready" || status === "generating") && (
           <GenerateForm
