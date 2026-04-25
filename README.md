@@ -1,15 +1,18 @@
 # GHL llms.txt Plugin
 
-Automatically generate and host a standards-compliant `llms.txt` file (following [llmstxt.org](https://llmstxt.org)) for your GoHighLevel sub-accounts.
+![llms.txt logo](/llms-logo.png)
+
+Automatically generate and host a standards-compliant `llms.txt` file (following [llmstxt.org](https://llmstxt.org)) for your GoHighLevel sub-accounts. Make your funnels and pages discoverable by AI assistants like ChatGPT, Claude, and Perplexity in seconds.
 
 ## 🚀 Features
 
+- **Official llms.txt Support:** Full compliance with the [llmstxt.org](https://llmstxt.org) specification.
 - **OAuth 2.0 Integration:** Secure connection to GHL sub-accounts using the official `@gohighlevel/api-client`.
-- **Automated Discovery:** Scans all funnels and pages within a location.
-- **llms.txt Generation:** Formats discovered pages into a structured markdown file optimized for LLMs.
+- **Automated Discovery:** Deep-scans all funnels and pages within a location.
 - **Automatic Hosting:** Uploads the generated file directly to the GHL Media Library.
-- **301 Redirects:** Automatically maps `yourdomain.com/llms.txt` to the hosted file URL.
-- **SSO Dashboard:** Deeply integrated into the GHL UI as a Custom Page.
+- **Instant Redirects:** Automatically creates a `/llms.txt` 301 redirect on your custom domain.
+- **SSO Dashboard:** Deeply integrated into the GHL UI as a Custom Page with built-in onboarding.
+- **Supabase Persistence:** Reliable session and token management.
 
 ---
 
@@ -17,19 +20,24 @@ Automatically generate and host a standards-compliant `llms.txt` file (following
 
 ### 1. Prerequisites
 - A GoHighLevel Developer Account.
+- A Supabase Project (for session storage).
 - An app created in the [GHL Marketplace](https://marketplace.gohighlevel.com/).
 
 ### 2. Environment Variables
 Create a `.env` file in the root directory (use `.env.example` as a template):
 
 ```env
+# GHL API Keys
 GHL_CLIENT_ID="your_client_id"
 GHL_CLIENT_SECRET="your_client_secret"
-GHL_SHARED_SECRET_KEY="your_shared_secret_key"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
 GHL_REDIRECT_URI="http://localhost:3000/api/auth/callback"
-GHL_APP_VERSION_ID="your_app_version_id"
-GHL_BASE_URL="https://marketplace.leadconnectorhq.com"
+
+# App Configuration
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# Supabase Configuration
+SUPABASE_URL="your_supabase_url"
+SUPABASE_KEY="your_supabase_anon_or_service_role_key"
 ```
 
 ### 3. Install Dependencies
@@ -51,47 +59,50 @@ npm run dev
 2. **Authorize:** Select a GHL sub-account and authorize the app.
 3. **Dashboard Access:** After redirect, you'll land on `/dashboard`.
 4. **Generate:** Enter a Site Name and click **"Generate llms.txt"**.
-5. **Verify:** Check your GHL Media Library for the new `llms.txt` file.
+5. **Verify:** Check your GHL Media Library for the new `llms.txt` file and verify the redirect in your domain settings.
 
 ### GHL Iframe Testing (SSO)
 To test the SSO logic inside the GHL UI:
 1. Go to your **GHL Marketplace App Settings**.
-2. Set the **Custom Page URL** to `http://localhost:3000/dashboard`.
+2. Set the **Iframe URL** to `http://localhost:3000/dashboard`.
 3. Open a GHL Sub-account → **Settings** → **Custom Pages**.
-4. Launch your app. The dashboard should automatically detect your `locationId` via SSO.
+4. Launch your app. The dashboard will automatically detect your `locationId` via query parameters.
 
 ---
 
 ## 📦 Publishing to Marketplace
 
-### 1. Production Deployment
-Deploy your app to a provider like Vercel or Railway.
-- Ensure all environment variables are set in your production dashboard.
-- Update `GHL_REDIRECT_URI` and `NEXT_PUBLIC_APP_URL` to your production domain.
+Follow the [Publishing Guide](.gemini/antigravity/brain/b4d7abea-e48c-404a-9807-e3cab6b9e32e/publishing_guide.md.resolved) for full details.
 
-### 2. Update Marketplace App Settings
-In the [GHL Marketplace Console](https://marketplace.gohighlevel.com/):
-- **Redirect URI:** Update to `https://your-domain.com/api/auth/callback`.
-- **Scopes:** Ensure the following are checked:
-    - `funnels/funnel.readonly`
-    - `funnels/page.readonly`
-    - `funnels/redirect.readonly`
-    - `funnels/redirect.write`
-    - `medias.readonly`
-    - `medias.write`
-    - `locations.readonly`
-- **Custom Page:** Set to `https://your-domain.com/dashboard`.
+### Required Documentation
+GHL requires public URLs for:
+- **Privacy Policy:** [your-domain.com/privacy](/privacy)
+- **Terms of Service:** [your-domain.com/terms](/terms)
+- **Support Email:** `support@yourdomain.com`
 
-### 3. Submission
-- Provide a clear description and screenshots of the dashboard.
-- Submit for review via the GHL Marketplace dashboard.
+### Scopes Required
+Ensure your app has the following scopes in the Developer Portal:
+- `funnels/funnel.readonly`
+- `funnels/page.readonly`
+- `funnels/redirect.readonly`
+- `funnels/redirect.write`
+- `medias.readonly`
+- `medias.write`
+- `locations.readonly`
 
 ---
 
 ## 🏗 Project Structure
 
 - `/app/api/auth`: OAuth initiation and callback handlers.
-- `/app/api/llms/generate`: Core pipeline (Discovery -> Generation -> Upload -> Redirect).
+- `/app/api/llms`: Generation and upload endpoints.
 - `/app/dashboard`: The main GHL integrated UI.
-- `/lib/ghl`: GHL SDK wrappers and business logic services.
-- `/lib/sso.ts`: SSO decryption utility.
+- `/app/privacy` & `/app/terms`: Legal documentation pages.
+- `/lib/ghl`: GHL SDK wrappers and client logic.
+- `/lib/supabase`: Supabase client and session management.
+- `/public`: Assets including the official logo and app icon.
+
+---
+
+## 📄 License
+This project is private and intended for use with the GoHighLevel Marketplace.
