@@ -64,38 +64,39 @@ export function GenerateForm({
         <Collapsible
           open={isOpen}
           onOpenChange={setIsOpen}
-          className="w-full space-y-2"
+          className="w-full rounded-md border bg-muted/10"
         >
-          <div className="flex items-center justify-between space-x-4">
-            <CollapsibleTrigger className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-8 px-3 has-[>kbd]:px-2 w-fit p-0 hover:bg-transparent text-primary hover:text-primary/80">
-              <ChevronRight className={`h-4 w-4 mr-2 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} />
-              <span className="font-medium text-sm">Edit Site Details (Optional)</span>
-            </CollapsibleTrigger>
-          </div>
-          <CollapsibleContent className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <Label htmlFor="siteName">Site Title</Label>
-              <Input
-                id="siteName"
-                type="text"
-                placeholder="Custom Title"
-                value={siteName}
-                onChange={(e) => setSiteName(e.target.value)}
-                disabled={isGenerating}
-              />
-            </div>
+          <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-sm font-medium transition-colors hover:bg-muted/20 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring rounded-t-md data-[state=closed]:rounded-b-md cursor-pointer">
+            <span>Edit Site Details (Optional)</span>
+            <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="px-4 pb-4 pt-2 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="siteName">Site Title</Label>
+                <Input
+                  id="siteName"
+                  type="text"
+                  placeholder="Custom Title"
+                  value={siteName}
+                  onChange={(e) => setSiteName(e.target.value)}
+                  disabled={isGenerating}
+                  className="bg-background"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="siteDescription">Site Summary</Label>
-              <Textarea
-                id="siteDescription"
-                placeholder="Override the auto-detected description…"
-                value={siteDescription}
-                onChange={(e) => setSiteDescription(e.target.value)}
-                disabled={isGenerating}
-                rows={2}
-                className="resize-none"
-              />
+              <div className="space-y-2">
+                <Label htmlFor="siteDescription">Site Summary</Label>
+                <Textarea
+                  id="siteDescription"
+                  placeholder="Override the auto-detected description…"
+                  value={siteDescription}
+                  onChange={(e) => setSiteDescription(e.target.value)}
+                  disabled={isGenerating}
+                  rows={2}
+                  className="resize-none bg-background"
+                />
+              </div>
             </div>
           </CollapsibleContent>
         </Collapsible>
