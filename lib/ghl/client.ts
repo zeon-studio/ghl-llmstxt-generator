@@ -7,7 +7,35 @@
  */
 
 import HighLevel from "@gohighlevel/api-client";
-import axios from "axios";
+import axios, { AxiosInstance } from "axios";
+import CryptoJS from "crypto-js";
+
+export const API_BASE = "https://services.leadconnectorhq.com";
+
+export interface GHLSSOPayload {
+  locationId: string;
+  userId: string;
+  companyId?: string;
+  userName?: string;
+  email?: string;
+  role?: string;
+  type?: string;
+}
+
+/**
+ * Creates an Axios instance pre-configured for the GoHighLevel V2 API.
+ * Automatically attaches the Bearer token, Version, and Accept headers.
+ */
+export function getGhlClient(accessToken: string): AxiosInstance {
+  return axios.create({
+    baseURL: API_BASE,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Version: "2021-07-28",
+      Accept: "application/json",
+    },
+  });
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,13 +53,22 @@ export interface TokenSession {
   city?: string;
   country?: string;
 }
+export interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  token_type: string;
+  locationId?: string;
+  userId?: string;
+  companyId?: string;
+  scope?: string;
+}
 
 // ─── Supabase Session Storage ────────────────────────────────────────────────
 
 import { supabase } from "../supabase/client";
 
-const GHL_API_BASE =
-  process.env.GHL_API_BASE_URL ?? "https://services.leadconnectorhq.com";
+const GHL_API_BASE = API_BASE;
 
 async function refreshAccessToken(
   session: TokenSession,
@@ -213,4 +250,52 @@ export function buildAuthorizationUrl(state?: string): string {
   });
 
   return `${base}/oauth/chooselocation?${params.toString()}`;
+}
+
+/**
+ * Decrypts an SSO key string received from the GHL iframe.
+ */
+export function decryptSSOKey(encryptedKey: string): GHLSSOPayload | null {
+  const sharedSecret = process.env.GHL_SHARED_SECRET_KEY;
+  if (!sharedSecret) {
+    throw new Error(
+      "GHL_SHARED_SECRET_KEY is not set in environment variables"
+    );
+  }
+
+  try {
+    const bytes = CryptoJS.AES.decrypt(encryptedKey, sharedSecret);
+    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+
+    if (!decrypted) return null;
+
+    return JSON.parse(decrypted) as GHLSSOPayload;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Exchanges an authorization code for access and refresh tokens.
+ */
+export async function exchangeToken(code: string): Promise<TokenResponse> {
+  const redirectUri =
+    process.env.GHL_REDIRECT_URI ??
+    `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
+
+  const resp = await axios.post(
+    `${API_BASE}/oauth/token`,
+    new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: redirectUri,
+      client_id: process.env.GHL_CLIENT_ID!,
+      client_secret: process.env.GHL_CLIENT_SECRET!,
+    }),
+    {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    }
+  );
+
+  return resp.data;
 }

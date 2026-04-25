@@ -4,9 +4,7 @@
  * Service to fetch and manage domains for a GHL location.
  */
 
-import axios from "axios";
-
-const API_BASE = process.env.GHL_API_BASE_URL ?? "https://services.leadconnectorhq.com";
+import { getGhlClient } from "./client";
 
 export interface GHLDomain {
   id: string;
@@ -17,12 +15,8 @@ export interface GHLDomain {
  * Fetches all domains for a given location.
  */
 export async function fetchDomains(locationId: string, accessToken: string): Promise<GHLDomain[]> {
-  const resp = await axios.get(`${API_BASE}/locations/${locationId}/domains`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Version: "2021-07-28",
-    },
-  });
+  const client = getGhlClient(accessToken);
+  const resp = await client.get(`/locations/${locationId}/domains`);
 
   return resp.data?.domains ?? [];
 }

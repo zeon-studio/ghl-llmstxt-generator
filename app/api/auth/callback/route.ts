@@ -11,24 +11,12 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
-import { sessionStorage } from "@/lib/ghl/client";
+import { exchangeToken, getGhlClient, sessionStorage } from "@/lib/ghl/client";
 import type { TokenSession } from "@/lib/ghl/client";
 
 export const runtime = "nodejs";
 
-const GHL_API_BASE =
-  process.env.GHL_API_BASE_URL ?? "https://services.leadconnectorhq.com";
 
-interface TokenResponse {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number; // seconds
-  token_type: string;
-  locationId?: string;
-  userId?: string;
-  companyId?: string;
-  scope?: string;
-}
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams } = request.nextUrl;
@@ -54,44 +42,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    // ── Exchange code for tokens ──────────────────────────────────────────
-    const redirectUri =
-      process.env.GHL_REDIRECT_URI ??
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
+    // ── Step 1: Exchange code for tokens ──────────────────────────────────────────
+    const tokenData = await exchangeToken(code);
 
-    const tokenResp = await axios.post<TokenResponse>(
-      `${GHL_API_BASE}/oauth/token`,
-      new URLSearchParams({
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: redirectUri,
-        client_id: process.env.GHL_CLIENT_ID!,
-        client_secret: process.env.GHL_CLIENT_SECRET!,
-      }),
-      {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      }
-    );
-
-    const tokenData = tokenResp.data;
-
-    // ── Resolve locationId ────────────────────────────────────────────────
+    // ── Step 2: Resolve locationId ────────────────────────────────────────────────
     const resolvedLocationId =
       locationId ?? tokenData.locationId ?? "unknown";
 
-    // ── Fetch Location Details ───────────────────────────────────────────
+    // ── Step 3: Fetch Location Details ───────────────────────────────────────────
     let locationDetails = {};
-    try {
-      if (resolvedLocationId !== "unknown") {
-        const locResp = await axios.get(
-          `${GHL_API_BASE}/locations/${resolvedLocationId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${tokenData.access_token}`,
-              Version: "2021-07-28",
-            },
-          }
-        );
+    if (resolvedLocationId !== "unknown") {
+      try {
+        const client = getGhlClient(tokenData.access_token);
+        const locResp = await client.get(`/locations/${resolvedLocationId}`);
         const locData = locResp.data?.location;
         if (locData) {
           locationDetails = {
@@ -103,9 +66,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             country: locData.country,
           };
         }
+      } catch (err) {
+        console.warn("[GHL Callback] Failed to fetch location details:", err);
       }
-    } catch (err) {
-      console.warn("[GHL Callback] Failed to fetch location details:", err);
     }
 
     // ── Persist session ───────────────────────────────────────────────────
@@ -134,20 +97,22 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const response = NextResponse.redirect(dashboardUrl);
     response.cookies.delete("ghl_oauth_state");
     return response;
-  } catch (error) {
+  } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
-      console.error(
-        "[GHL Callback] Token exchange failed:",
-        error.response?.data ?? error.message
-      );
+      console.error("[GHL Callback] Error:", error.response?.data ?? error.message);
       return NextResponse.json(
         {
-          error: "Token exchange failed",
+          error: "Authentication failed",
           details: error.response?.data,
         },
-        { status: 502 }
+        { status: error.response?.status || 500 }
       );
     }
-    throw error;
+    const err = error as Error;
+    console.error("[GHL Callback] Error:", err.message);
+    return NextResponse.json(
+      { error: "Authentication failed", details: err.message },
+      { status: 500 }
+    );
   }
 }

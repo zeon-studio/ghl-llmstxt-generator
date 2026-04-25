@@ -5,64 +5,13 @@
  * Uses POST /medias/upload-file (multipart/form-data).
  */
 
-import axios from "axios";
 import FormData from "form-data";
-
-const API_BASE =
-  process.env.GHL_API_BASE_URL ?? "https://services.leadconnectorhq.com";
+import { getGhlClient } from "./client";
 
 export interface UploadResult {
   fileUrl: string;
   fileName: string;
   fileId?: string;
-}
-
-/**
- * Uploads a text file to GHL Media Storage for a given location.
- * Returns the public URL of the uploaded file.
- */
-export async function uploadLlmsTxt(
-  content: string,
-  fileName: string,
-  locationId: string,
-  accessToken: string
-): Promise<UploadResult> {
-  const form = new FormData();
-
-  // Attach the file as a Buffer so FormData sets the correct Content-Type
-  const buffer = Buffer.from(content, "utf-8");
-  form.append("file", buffer, {
-    filename: fileName,
-    contentType: "text/plain",
-  });
-  form.append("name", fileName);
-  form.append("locationId", locationId);
-
-  const resp = await axios.post(`${API_BASE}/medias/upload-file`, form, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Version: "2021-07-28",
-      ...form.getHeaders(),
-    },
-  });
-
-  const data = resp.data;
-
-  // GHL returns either { url, fileName } or { fileUrl, fileName, id }
-  const fileUrl: string =
-    data?.url ?? data?.fileUrl ?? data?.data?.url ?? "";
-
-  if (!fileUrl) {
-    throw new Error(
-      `Upload succeeded but no URL returned. Response: ${JSON.stringify(data)}`
-    );
-  }
-
-  return {
-    fileUrl,
-    fileName: data?.fileName ?? fileName,
-    fileId: data?.id ?? data?.fileId,
-  };
 }
 
 interface MediaFile {
@@ -77,6 +26,58 @@ interface MediaFile {
 }
 
 /**
+ * Uploads a text file to GHL Media Storage for a given location.
+ * Returns the public URL of the uploaded file.
+ */
+export async function uploadLlmsTxt(
+  content: string,
+  fileName: string,
+  locationId: string,
+  accessToken: string
+): Promise<UploadResult> {
+  const client = getGhlClient(accessToken);
+  const form = new FormData();
+
+  // Attach the file as a Buffer so FormData sets the correct Content-Type
+  const buffer = Buffer.from(content, "utf-8");
+  form.append("file", buffer, {
+    filename: fileName,
+    contentType: "text/plain",
+  });
+  form.append("name", fileName);
+  form.append("locationId", locationId);
+
+  try {
+    const uploadResp = await client.post("/medias/upload-file", form, {
+      headers: {
+        ...form.getHeaders(),
+      },
+    });
+
+    const data = uploadResp.data;
+
+    // GHL returns either { url, fileName } or { fileUrl, fileName, id }
+    const fileUrl: string =
+      data?.url ?? data?.fileUrl ?? data?.data?.url ?? "";
+
+    if (!fileUrl) {
+      throw new Error(
+        `Upload succeeded but no URL returned. Response: ${JSON.stringify(data)}`
+      );
+    }
+
+    return {
+      fileUrl,
+      fileName: data?.fileName ?? fileName,
+      fileId: data?.id ?? data?.fileId,
+    };
+  } catch (error) {
+    console.error("[Media] Upload failed:", error);
+    throw error;
+  }
+}
+
+/**
  * Finds and deletes old llms_*.txt files in the media library to keep it clean.
  */
 export async function cleanupOldLlmsFiles(
@@ -85,13 +86,10 @@ export async function cleanupOldLlmsFiles(
   currentFileId?: string
 ) {
   try {
+    const client = getGhlClient(accessToken);
     console.log(`[Media] Cleaning up old llms.txt files for location: ${locationId}`);
     
-    const resp = await axios.get(`${API_BASE}/medias/files`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Version: "2021-07-28",
-      },
+    const resp = await client.get("/medias/files", {
       params: {
         altId: locationId,
         altType: "location",
@@ -125,46 +123,29 @@ export async function cleanupOldLlmsFiles(
     console.log(`[Media] Found ${oldFiles.length} old files. Deleting...`);
 
     for (const file of oldFiles) {
-      let idsToTry = [file.id, file._id, file.fileId, file.file_id, file.uid].filter(Boolean) as string[];
-      
-      // Extract UUID from URL just in case the API returned a Mongo ID but expects UUID for deletion
-      const urlMatch = file.url?.match(/\/media\/([a-f0-9-]+)\.\w+$/);
-      if (urlMatch && urlMatch[1]) {
-        idsToTry.push(urlMatch[1]);
-      }
-      
-      // Remove duplicates
-      idsToTry = [...new Set(idsToTry)];
+      const idsToTry = [...new Set([file.id, file._id, file.fileId, file.file_id, file.uid].filter(Boolean) as string[])];
 
       if (idsToTry.length === 0) continue;
 
       let deleted = false;
       
-      for (const idToTry of idsToTry) {
+      for (const id of idsToTry) {
         if (deleted) break;
 
-        // Try different known GHL delete endpoints
-        const endpointVariations = [
-          { url: `${API_BASE}/medias/files/${idToTry}`, useQueryId: false },
-          { url: `${API_BASE}/medias/file/${idToTry}`, useQueryId: false },
-          { url: `${API_BASE}/medias/${idToTry}`, useQueryId: false },
-          { url: `${API_BASE}/medias/files`, useQueryId: true },
+        // 2. Fallback variants
+        const endpointVariants = [
+          `/medias/files/${id}?altId=${locationId}&altType=location`,
+          `/medias/file/${id}?altId=${locationId}&altType=location`,
+          `/medias/files/${id}`,
+          `/medias/file/${id}`,
+          `/medias/${id}?altId=${locationId}&altType=location`,
+          `/medias/${id}`,
         ];
 
-        for (const variation of endpointVariations) {
+        for (const variant of endpointVariants) {
           try {
-            await axios.delete(variation.url, {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-                Version: "2021-07-28",
-              },
-              params: {
-                altId: locationId,
-                altType: "location",
-                ...(variation.useQueryId ? { id: idToTry } : {}),
-              },
-            });
-            console.log(`[Media] Deleted: ${file.name || idToTry} (using ${variation.url})`);
+            await client.delete(variant);
+            console.log(`[Media Cleanup] Successfully deleted ${id} via ${variant}`);
             deleted = true;
             break; // Stop trying variations for this ID
           } catch {

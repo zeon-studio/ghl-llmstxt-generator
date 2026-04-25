@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { decryptSSOKey } from "@/lib/sso";
+import { decryptSSOKey } from "@/lib/ghl/client";
 
 export const runtime = "nodejs";
 

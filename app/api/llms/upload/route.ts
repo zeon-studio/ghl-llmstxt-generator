@@ -11,8 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import axios from "axios";
-import { sessionStorage } from "@/lib/ghl/client";
+import { getActiveSession, handleApiError } from "@/lib/api-utils";
 import { uploadLlmsTxt, cleanupOldLlmsFiles } from "@/lib/ghl/media";
 import { createLlmsRedirect } from "@/lib/ghl/redirects";
 import { getLlmsTxtFilename } from "@/lib/ghl/llms-generator";
@@ -31,28 +30,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const body = (await request.json()) as Partial<UploadRequestBody>;
     const { locationId, content, domainId, baseUrl } = body;
 
-    if (!locationId || !content) {
+    if (!content) {
       return NextResponse.json(
-        { error: "locationId and content are required" },
+        { error: "content is required" },
         { status: 400 }
       );
     }
 
-    // ── Retrieve access token ─────────────────────────────────────────────
-    const session = await sessionStorage.get(locationId);
-    if (!session) {
-      return NextResponse.json(
-        {
-          error: "No active session for this location. Please re-authorize.",
-          code: "SESSION_NOT_FOUND",
-        },
-        { status: 401 }
-      );
-    }
+    const { session, errorResponse } = await getActiveSession(locationId);
+    if (errorResponse) return errorResponse;
 
-    const { accessToken } = session;
+    const { accessToken, locationId: activeLocationId } = session!;
 
-    console.log(`[Upload] Starting upload for locationId: ${locationId}`);
+
+
+    console.log(`[Upload] Starting upload for locationId: ${activeLocationId}`);
 
     // ── Step 1: Upload to GHL Media Storage ───────────────────────────────
     const fileName = getLlmsTxtFilename();
@@ -60,13 +52,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const uploadResult = await uploadLlmsTxt(
       content,
       fileName,
-      locationId,
+      activeLocationId,
       accessToken
     );
     console.log(`[Upload] Uploaded to: ${uploadResult.fileUrl}`);
 
     // ── Step 1.5: Cleanup old files (asynchronously) ─────────────────────
-    cleanupOldLlmsFiles(locationId, accessToken, uploadResult.fileId).catch(
+    cleanupOldLlmsFiles(activeLocationId, accessToken, uploadResult.fileId).catch(
       (err) => console.error("[Upload] Cleanup error:", err)
     );
 
@@ -77,7 +69,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (targetDomain) {
       console.log(`[Upload] Creating /llms.txt redirect rule for domain: ${targetDomain}`);
       redirectResult = await createLlmsRedirect(
-        locationId,
+        activeLocationId,
         targetDomain,
         uploadResult.fileUrl,
         accessToken
@@ -92,29 +84,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       redirect: redirectResult,
     });
   } catch (error: unknown) {
-    console.error("[Upload] Pipeline error:", error);
-    
-    let status = 500;
-    let message = "Unknown error occurred";
-    let details = null;
-
-    if (axios.isAxiosError(error)) {
-      const ghlError = error.response?.data;
-      status = error.response?.status || 500;
-      message = ghlError?.message || error.message || "GHL API error";
-      details = ghlError?.errors || ghlError || null;
-    } else if (error instanceof Error) {
-      message = error.message;
-    }
-
-    return NextResponse.json(
-      { 
-        success: false,
-        error: "Upload failed", 
-        details: message,
-        ghlDetails: details 
-      },
-      { status }
-    );
+    return handleApiError(error, "Upload failed");
   }
 }

@@ -8,15 +8,20 @@
  */
 
 import axios from "axios";
-
-const API_BASE =
-  process.env.GHL_API_BASE_URL ?? "https://services.leadconnectorhq.com";
+import { getGhlClient } from "./client";
 
 export interface RedirectResult {
   id?: string;
   locationId: string;
   path: string;
   targetUrl: string;
+}
+
+export interface GHLRedirect {
+  _id?: string;
+  id?: string;
+  path: string;
+  domain: string;
 }
 
 interface GHLErrorResponse {
@@ -33,6 +38,7 @@ export async function createLlmsRedirect(
   targetUrl: string,
   accessToken: string
 ): Promise<RedirectResult> {
+  const client = getGhlClient(accessToken);
   const cleanDomain = domainName.replace(/^https?:\/\//, "").replace(/\/$/, "");
   const payload = {
     locationId,
@@ -42,16 +48,8 @@ export async function createLlmsRedirect(
     action: "url",
   };
 
-  const headers = {
-    Authorization: `Bearer ${accessToken}`,
-    Version: "2021-07-28",
-    "Content-Type": "application/json",
-  };
-
   try {
-    const resp = await axios.post(`${API_BASE}/funnels/lookup/redirect`, payload, {
-      headers,
-    });
+    const resp = await client.post("/funnels/lookup/redirect", payload);
 
     return {
       id: resp.data?.id,
@@ -74,18 +72,17 @@ export async function createLlmsRedirect(
         let hasMore = true;
 
         while (hasMore) {
-          const listResp = await axios.get(`${API_BASE}/funnels/lookup/redirect/list`, {
-            headers,
+          const listResp = await client.get("/funnels/lookup/redirect/list", {
             params: { locationId, limit: 20, offset: currentOffset },
           });
 
           // GHL actually returns the array inside `data`, not `redirects`
-          const redirects = listResp.data?.data || listResp.data?.redirects || [];
+          const redirects: GHLRedirect[] = listResp.data?.data || listResp.data?.redirects || [];
           console.log(`[Redirect] Fetched ${redirects.length} redirects at offset ${currentOffset}`);
           
           if (redirects.length === 0) break;
 
-          existing = redirects.find((r: { _id?: string; id?: string; path: string; domain: string }) => {
+          existing = redirects.find((r) => {
             const rPath = r.path || "";
             const rDomain = r.domain || "";
             // GHL sometimes strips leading slashes or has different domain formatting
@@ -101,14 +98,13 @@ export async function createLlmsRedirect(
         if (existing) {
           const redirectId = existing._id || existing.id;
           console.log(`[Redirect] Found existing redirect ID: ${redirectId}. Updating...`);
-          await axios.patch(
-            `${API_BASE}/funnels/lookup/redirect/${redirectId}`,
+          await client.patch(
+            `/funnels/lookup/redirect/${redirectId}`,
             {
               locationId,
               target: targetUrl,
               action: "url",
-            },
-            { headers }
+            }
           );
 
           return {

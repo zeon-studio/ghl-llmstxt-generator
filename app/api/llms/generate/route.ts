@@ -14,8 +14,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import axios from "axios";
-import { sessionStorage } from "@/lib/ghl/client";
+import { getActiveSession, handleApiError } from "@/lib/api-utils";
 import { discoverFunnelsAndPages } from "@/lib/ghl/funnels";
 import { generateLlmsTxt, getLlmsTxtFilename } from "@/lib/ghl/llms-generator";
 import { uploadLlmsTxt } from "@/lib/ghl/media";
@@ -38,12 +37,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const body = (await request.json()) as Partial<GenerateRequestBody>;
     const { locationId, siteName, siteDescription, domainId, baseUrl } = body;
 
-    if (!locationId) {
-      return NextResponse.json(
-        { error: "locationId is required" },
-        { status: 400 }
-      );
-    }
+    const { session, errorResponse } = await getActiveSession(locationId);
+    if (errorResponse) return errorResponse;
+
+    const { accessToken, locationId: activeLocationId } = session!;
 
     // ── Optional Scrape: If title/description are missing, try to fetch them ──
     let finalSiteName = siteName?.trim();
@@ -72,25 +69,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // ── Retrieve access token ─────────────────────────────────────────────
-    const session = await sessionStorage.get(locationId);
-    if (!session) {
-      return NextResponse.json(
-        {
-          error: "No active session for this location. Please re-authorize.",
-          code: "SESSION_NOT_FOUND",
-        },
-        { status: 401 }
-      );
-    }
 
-    const { accessToken } = session;
 
-    console.log(`[Generate] Starting pipeline for locationId: ${locationId}`);
+    console.log(`[Generate] Starting pipeline for locationId: ${activeLocationId}`);
 
     // ── Step 1: Discover funnels + pages ──────────────────────────────────
     console.log("[Generate] Discovering funnels and pages...");
-    const funnels = await discoverFunnelsAndPages(locationId, accessToken);
+    const funnels = await discoverFunnelsAndPages(activeLocationId, accessToken);
     console.log(
       `[Generate] Found ${funnels.length} funnels with ${funnels.reduce((n, f) => n + f.pages.length, 0)} pages total`
     );
@@ -99,7 +84,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const content = generateLlmsTxt(funnels, {
       siteName: finalSiteName,
       siteDescription: finalSiteDescription,
-      locationId,
+      locationId: activeLocationId,
       baseUrl,
     });
     console.log(
@@ -123,7 +108,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const uploadResult = await uploadLlmsTxt(
       content,
       fileName,
-      locationId,
+      activeLocationId,
       accessToken
     );
     console.log(`[Generate] Uploaded to: ${uploadResult.fileUrl}`);
@@ -135,7 +120,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (targetDomain) {
       console.log(`[Generate] Creating /llms.txt redirect rule for domain: ${targetDomain}`);
       redirectResult = await createLlmsRedirect(
-        locationId,
+        activeLocationId,
         targetDomain,
         uploadResult.fileUrl,
         accessToken
@@ -155,29 +140,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       preview: content.slice(0, 500) + (content.length > 500 ? "..." : ""),
     });
   } catch (error: unknown) {
-    console.error("[Generate] Pipeline error:", error);
-    
-    let status = 500;
-    let message = "Unknown error occurred";
-    let details = null;
-
-    if (axios.isAxiosError(error)) {
-      const ghlError = error.response?.data;
-      status = error.response?.status || 500;
-      message = ghlError?.message || error.message || "GHL API error";
-      details = ghlError?.errors || ghlError || null;
-    } else if (error instanceof Error) {
-      message = error.message;
-    }
-
-    return NextResponse.json(
-      { 
-        success: false,
-        error: "Generation pipeline failed", 
-        details: message,
-        ghlDetails: details 
-      },
-      { status }
-    );
+    return handleApiError(error, "Generation pipeline failed");
   }
 }

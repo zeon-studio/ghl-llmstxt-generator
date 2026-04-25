@@ -5,10 +5,7 @@
  * locationId using the authenticated access token.
  */
 
-import axios from "axios";
-
-const API_BASE =
-  process.env.GHL_API_BASE_URL ?? "https://services.leadconnectorhq.com";
+import { getGhlClient } from "./client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,13 +51,10 @@ export async function discoverFunnelsAndPages(
   accessToken: string
 ): Promise<FunnelWithPages[]> {
   console.log(`[Discovery] Fetching funnels for location: ${locationId}`);
+  const client = getGhlClient(accessToken);
   
-  const resp = await axios.get(`${API_BASE}/funnels/funnel/list`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Version: "2021-07-28",
-    },
-    params: { locationId, limit: 20, offset: 0 },
+  const resp = await client.get("/funnels/funnel/list", {
+    params: { locationId, limit: 100, offset: 0 },
   });
 
   const rawFunnels = resp.data?.funnels ?? [];
