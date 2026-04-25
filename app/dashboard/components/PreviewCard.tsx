@@ -1,4 +1,8 @@
 import { Status, GenerateResult } from "../types";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 interface PreviewCardProps {
   status: Status;
@@ -21,46 +25,51 @@ export function PreviewCard({
   const isPushing = status === "pushing";
 
   return (
-    <div className="form-card preview-card">
-      <h2 className="form-title">Review llms.txt Content</h2>
-      <p className="form-subtitle">
-        Below is the generated content based on your funnels and pages.
-        Review it before pushing it to your site&apos;s media library.
-      </p>
+    <Card className="w-full border-primary/20 shadow-md">
+      <CardHeader>
+        <CardTitle>Review llms.txt Content</CardTitle>
+        <CardDescription>
+          Below is the generated content based on your funnels and pages.
+          Review it before pushing it to your site&apos;s media library.
+        </CardDescription>
+      </CardHeader>
 
-      <div className="preview-container">
-        <textarea
-          className="field-input preview-textarea"
+      <CardContent>
+        <Textarea
+          className="font-mono text-sm bg-muted/50 resize-none"
           value={generatedContent}
           onChange={(e) => setGeneratedContent(e.target.value)}
           rows={12}
           spellCheck={false}
         />
-      </div>
+      </CardContent>
 
-      <div className="button-group mt-6">
-        <button
-          className={`btn btn-primary btn-lg flex-1 ${isPushing ? "btn-loading" : ""}`}
+      <CardFooter className="flex flex-col sm:flex-row gap-3">
+        <Button
+          className="w-full sm:flex-1"
+          size="lg"
           onClick={onPush}
           disabled={isPushing}
         >
           {isPushing ? (
             <>
-              <span className="btn-spinner" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Pushing to Media…
             </>
           ) : (
             "🚀 Push to Site Media"
           )}
-        </button>
-        <button
-          className="btn btn-secondary btn-lg"
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full sm:w-auto"
+          size="lg"
           onClick={onCancel}
           disabled={isPushing}
         >
           Cancel
-        </button>
-      </div>
-    </div>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

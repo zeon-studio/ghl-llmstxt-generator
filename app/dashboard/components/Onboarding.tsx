@@ -1,5 +1,8 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sparkles, X } from "lucide-react";
 import { useState } from "react";
 
 export function Onboarding() {
@@ -7,106 +10,73 @@ export function Onboarding() {
 
   if (!isOpen) return null;
 
+  const steps = [
+    {
+      n: "1",
+      title: "Select Your Domain",
+      desc: "Choose the domain where your funnels are hosted. We'll use this to scan for pages.",
+    },
+    {
+      n: "2",
+      title: "Review & Generate",
+      desc: "Fill in your site name and description. We'll automatically find all your pages and format them for AI discovery.",
+    },
+    {
+      n: "3",
+      title: "Push to Media Library",
+      desc: "Once generated, we'll upload the file to your GHL Media Storage and create a /llms.txt redirect automatically.",
+    },
+  ];
+
   return (
-    <div
-      className="form-card"
-      style={{
-        border: "1px solid var(--brand)",
-        background: "rgba(108,71,255,0.05)",
-        marginBottom: "1rem",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: "1rem",
-        }}
-      >
-        <h2
-          className="form-title"
-          style={{
-            fontSize: "1.2rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-          }}
-        >
-          <img
-            src="/icon.png"
-            alt=""
-            style={{ width: "20px", height: "20px", borderRadius: "3px" }}
-          />
+    <Card className="w-full relative overflow-hidden border-primary/20 bg-primary/5 shadow-sm">
+      <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-primary/40 via-primary to-primary/40" />
+
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-primary" />
           Quick Start Guide
-        </h2>
-        <button
+        </CardTitle>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 -mr-2 text-muted-foreground hover:text-foreground"
           onClick={() => setIsOpen(false)}
-          style={{
-            background: "transparent",
-            border: "none",
-            color: "var(--text-dim)",
-            cursor: "pointer",
-            fontSize: "1.2rem",
-          }}
         >
-          ×
-        </button>
-      </div>
+          <X className="w-4 h-4" />
+        </Button>
+      </CardHeader>
 
-      <div className="landing-steps" style={{ marginTop: 0 }}>
-        {[
-          {
-            n: "1",
-            title: "Select Your Domain",
-            desc: "Choose the domain where your funnels are hosted. We'll use this to scan for pages.",
-          },
-          {
-            n: "2",
-            title: "Review & Generate",
-            desc: "Fill in your site name and description. We'll automatically find all your pages and format them for AI discovery.",
-          },
-          {
-            n: "3",
-            title: "Push to Media Library",
-            desc: "Once generated, we'll upload the file to your GHL Media Storage and create a /llms.txt redirect automatically.",
-          },
-        ].map((step) => (
-          <div
-            key={step.n}
-            className="step"
-            style={{ padding: "0.75rem 1rem", background: "var(--surface-2)" }}
-          >
+      <CardContent>
+        <div className="grid gap-3 sm:grid-cols-3 mt-2">
+          {steps.map((step) => (
             <div
-              className="step-num"
-              style={{
-                width: "24px",
-                height: "24px",
-                minWidth: "24px",
-                fontSize: "0.7rem",
-              }}
+              key={step.n}
+              className="flex flex-col gap-2 p-4 rounded-lg bg-background/60 border border-primary/10 shadow-sm"
             >
-              {step.n}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary font-bold text-xs">
+                  {step.n}
+                </div>
+                <h3 className="font-semibold text-sm leading-none">
+                  {step.title}
+                </h3>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed pl-9">
+                {step.desc}
+              </p>
             </div>
-            <div className="step-text" style={{ fontSize: "0.8rem" }}>
-              <strong>{step.title}</strong>
-              {step.desc}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <p
-        style={{
-          marginTop: "1rem",
-          fontSize: "0.75rem",
-          color: "var(--text-muted)",
-          textAlign: "center",
-        }}
-      >
-        AI agents like ChatGPT and Claude look for <code>/llms.txt</code> to
-        understand your site better.
-      </p>
-    </div>
+        <p className="mt-6 text-xs text-center text-muted-foreground bg-background/40 py-2 rounded-md border border-primary/5">
+          AI agents like ChatGPT and Claude look for{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-primary">
+            /llms.txt
+          </code>{" "}
+          to understand your site better.
+        </p>
+      </CardContent>
+    </Card>
   );
 }

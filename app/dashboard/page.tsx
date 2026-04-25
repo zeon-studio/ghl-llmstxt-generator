@@ -134,10 +134,10 @@ export default function DashboardPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <main className="dashboard-root">
+    <main className="min-h-screen bg-background flex flex-col">
       <DashboardHeader session={session} />
 
-      <div className="dash-body">
+      <div className="flex-1 flex flex-col items-center justify-start p-4 md:p-8 gap-6 w-full max-w-4xl mx-auto">
         <StatusDisplay status={status} errorMsg={errorMsg} session={session} />
 
         {status === "ready" && <Onboarding />}

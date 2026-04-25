@@ -1,4 +1,7 @@
 import { Status, GHLSession } from "../types";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { buttonVariants } from "@/components/ui/button";
+import { AlertTriangle } from "lucide-react";
 
 interface StatusDisplayProps {
   status: Status;
@@ -9,18 +12,23 @@ interface StatusDisplayProps {
 
 export function StatusDisplay({ status, errorMsg, session, onRetry }: StatusDisplayProps) {
 
-
   if (status === "error" && !onRetry) {
     return (
-      <div className="state-card error-card">
-        <span className="state-icon">⚠️</span>
-        <p className="state-label">{errorMsg}</p>
-        {!session && (
-          <a href="/api/auth/ghl" className="btn btn-primary mt-4">
-            Re-authorize with GoHighLevel
-          </a>
-        )}
-      </div>
+      <Alert variant="destructive" className="w-full">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription className="flex flex-col gap-4 mt-2">
+          <p>{errorMsg}</p>
+          {!session && (
+            <a 
+              href="/api/auth/ghl" 
+              className={buttonVariants({ variant: "outline", className: "w-fit border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" })}
+            >
+              Re-authorize with GoHighLevel
+            </a>
+          )}
+        </AlertDescription>
+      </Alert>
     );
   }
 
