@@ -16,6 +16,7 @@ interface ResultCardProps {
   result: GenerateResult | null;
   errorMsg: string;
   onReset: () => void;
+  siteDomain?: string;
 }
 
 export function ResultCard({
@@ -23,8 +24,16 @@ export function ResultCard({
   result,
   errorMsg,
   onReset,
+  siteDomain,
 }: ResultCardProps) {
   if (status === "done" && result?.success) {
+    // Ensure domain has correct scheme for link
+    const domainLink = siteDomain
+      ? siteDomain.startsWith("http")
+        ? siteDomain
+        : `https://${siteDomain}`
+      : "";
+
     return (
       <Card className="w-full border-green-500/20 bg-green-50/50 dark:bg-green-950/10">
         <CardHeader className="flex flex-row items-center gap-4 pb-2">
@@ -41,49 +50,62 @@ export function ResultCard({
         </CardHeader>
 
         <CardContent className="space-y-4 pt-4">
-          <div className="rounded-lg bg-background border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <span className="text-sm font-medium text-muted-foreground">
+          {/* Hosted File */}
+          <div className="rounded-lg bg-background border p-4 space-y-2">
+            <span className="text-sm font-medium text-muted-foreground block">
               Hosted File URL
             </span>
-            <a
-              href={result.fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline font-medium text-sm flex items-center gap-1 break-all"
-            >
-              {result.fileUrl}
-              <ExternalLink className="w-4 h-4 shrink-0" />
-            </a>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={result.fileUrl}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-xs font-mono shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              <Button size="icon" variant="outline" className="shrink-0">
+                <a
+                  href={result.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Open hosted file"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </Button>
+            </div>
           </div>
 
+          {/* Redirect Info */}
           {result.redirect && (
-            <div className="rounded-lg bg-background border p-4 space-y-2">
-              <Badge
-                variant="secondary"
-                className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-              >
-                301 Redirect Created
-              </Badge>
-              <div className="text-sm font-mono bg-muted p-2 rounded break-all">
+            <div className="rounded-lg bg-background border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Badge
+                  variant="secondary"
+                  className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                >
+                  301 Redirect Created
+                </Badge>
+              </div>
+
+              <div className="text-xs font-mono bg-muted p-2 rounded break-all text-muted-foreground">
                 {result.redirect.path} → {result.redirect.targetUrl}
               </div>
-            </div>
-          )}
 
-          {result.preview && (
-            <details className="group rounded-lg border bg-background [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium text-muted-foreground">
-                Preview (first 500 chars)
-                <span className="transition-transform group-open:rotate-180">
-                  ▼
-                </span>
-              </summary>
-              <div className="border-t p-4 bg-muted/30">
-                <pre className="text-xs font-mono whitespace-pre-wrap wrap-break-word">
-                  {result.preview}
-                </pre>
-              </div>
-            </details>
+              {domainLink && (
+                <div className="pt-2">
+                  <a
+                    href={`${domainLink}/llms.txt`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                  >
+                    Check your redirect at{" "}
+                    {siteDomain?.replace(/^https?:\/\//, "")}/llms.txt
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
+            </div>
           )}
         </CardContent>
 

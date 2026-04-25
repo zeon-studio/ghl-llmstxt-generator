@@ -171,6 +171,7 @@ export default function DashboardPage() {
           result={result}
           errorMsg={errorMsg}
           onReset={resetPipeline}
+          siteDomain={siteDomain}
         />
       </div>
     </main>
