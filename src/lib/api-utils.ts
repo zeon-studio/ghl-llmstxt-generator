@@ -7,7 +7,6 @@ export interface SessionData {
   accessToken: string;
   locationName?: string;
   userId?: string;
-  userName?: string;
   email?: string;
 }
 
@@ -78,7 +77,6 @@ export async function getActiveSession(locationId?: string): Promise<{
       accessToken: session.accessToken,
       locationName: session.locationName,
       userId: session.userId,
-      userName: session.userName,
       email: session.email,
     },
   };

@@ -40,7 +40,12 @@ SUPABASE_URL="your_supabase_url"
 SUPABASE_KEY="your_supabase_anon_or_service_role_key"
 ```
 
-### 3. Install Dependencies
+### 3. Database Setup
+1. Go to your **Supabase Dashboard** -> **SQL Editor**.
+2. Copy the contents of `supabase_schema.sql` (found in the root of this project).
+3. Run the script to create the `sessions` table.
+
+### 4. Install Dependencies
 ```bash
 npm install
 ```

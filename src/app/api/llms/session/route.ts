@@ -17,7 +17,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         locationId: session!.locationId,
         locationName: session!.locationName,
         userId: session!.userId,
-        userName: session!.userName,
         email: session!.email,
       },
     });

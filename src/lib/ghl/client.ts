@@ -15,7 +15,6 @@ export interface GHLSSOPayload {
   locationId: string;
   userId: string;
   companyId?: string;
-  userName?: string;
   email?: string;
   role?: string;
   type?: string;
@@ -46,7 +45,6 @@ export interface TokenSession {
   userId?: string;
   companyId?: string;
   locationName?: string;
-  userName?: string;
   email?: string;
   phone?: string;
   address?: string;
@@ -107,6 +105,8 @@ async function refreshAccessToken(
 
 export const sessionStorage = {
   async set(locationId: string, session: TokenSession): Promise<void> {
+    console.log(`[Supabase] Attempting to save session for location: ${locationId}`);
+    
     const { error } = await supabase.from("sessions").upsert(
       {
         location_id: locationId,
@@ -116,7 +116,6 @@ export const sessionStorage = {
         user_id: session.userId || null,
         company_id: session.companyId || null,
         location_name: session.locationName || null,
-        user_name: session.userName || null,
         email: session.email || null,
         phone: session.phone || null,
         address: session.address || null,
@@ -128,18 +127,37 @@ export const sessionStorage = {
     );
 
     if (error) {
-      console.error("Failed to save session to Supabase:", error);
+      console.error("[Supabase] Error saving session:", {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+    } else {
+      console.log(`[Supabase] Session saved successfully for ${locationId}`);
     }
   },
 
   async get(locationId: string): Promise<TokenSession | undefined> {
+    console.log(`[Supabase] Fetching session for location: ${locationId}`);
+    
     const { data, error } = await supabase
       .from("sessions")
       .select("*")
       .eq("location_id", locationId)
       .single();
 
-    if (error || !data) {
+    if (error) {
+      if (error.code === "PGRST116") {
+        console.warn(`[Supabase] No session found in DB for location: ${locationId}`);
+      } else {
+        console.error("[Supabase] Error fetching session:", error);
+      }
+      return undefined;
+    }
+
+    if (!data) {
+      console.warn(`[Supabase] Session data is empty for location: ${locationId}`);
       return undefined;
     }
 
@@ -151,7 +169,6 @@ export const sessionStorage = {
       userId: data.user_id,
       companyId: data.company_id,
       locationName: data.location_name,
-      userName: data.user_name,
       email: data.email,
       phone: data.phone,
       address: data.address,

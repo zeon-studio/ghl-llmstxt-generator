@@ -119,7 +119,7 @@ export function GenerateForm({
               Loading connected domains…
             </div>
           ) : showManualInput ? (
-            <>
+            <div className="space-y-2">
               <Input
                 id="siteDomain"
                 type="text"
@@ -128,34 +128,54 @@ export function GenerateForm({
                 onChange={(e) => setSiteDomain(e.target.value)}
                 disabled={isGenerating}
               />
-              {domainsError && (
-                <p className="text-xs text-amber-500">
-                  {domainsError} — enter your domain manually.
-                </p>
-              )}
-              {!domainsError && domains.length === 0 && !domainsLoading && (
-                <p className="text-xs text-muted-foreground">
-                  No connected domains found — enter your domain manually.
-                </p>
-              )}
-            </>
+              <div className="flex justify-between items-center">
+                {domainsError ? (
+                  <p className="text-xs text-amber-500">
+                    {domainsError} — enter your domain manually.
+                  </p>
+                ) : domains.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    No connected domains found — enter your domain manually.
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setManualMode(false)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Select from connected domains
+                  </button>
+                )}
+              </div>
+            </div>
           ) : (
-            <Select
-              value={siteDomain}
-              onValueChange={(val) => setSiteDomain(val ?? "")}
-              disabled={isGenerating}
-            >
-              <SelectTrigger id="siteDomain" className="w-full">
-                <SelectValue placeholder="Select a domain…" />
-              </SelectTrigger>
-              <SelectContent>
-                {domains.map((d) => (
-                  <SelectItem key={d.id} value={d.domainName}>
-                    {d.domainName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <Select
+                value={siteDomain}
+                onValueChange={(val) => setSiteDomain(val ?? "")}
+                disabled={isGenerating}
+              >
+                <SelectTrigger id="siteDomain" className="w-full">
+                  <SelectValue placeholder="Select a domain…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {domains.map((d) => (
+                    <SelectItem key={d.id} value={d.domainName}>
+                      {d.domainName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setManualMode(true)}
+                  className="text-xs cursor-pointer text-primary hover:underline"
+                >
+                  Enter domain manually
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </CardContent>

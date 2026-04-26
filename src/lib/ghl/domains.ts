@@ -7,11 +7,9 @@
  * Based on empirical testing, the only reliable public sources are:
  *
  *  1. location.domain   — the primary hosting domain (may be empty)
- *                         Scope: locations.readonly
- *  2. redirect rules    — every redirect rule carries the connected domain
- *                         Scope: funnels/redirect.readonly  (limit ≤ 20)
- *
- * Both scopes are already in the app's OAuth grant.
+ *  2. location.website  — often used for the business domain
+ *  3. redirect rules    — every redirect rule carries the connected domain
+ *  4. funnels/websites  — attached to specific domains
  */
 
 import { getGhlClient } from "./client";
@@ -24,7 +22,7 @@ export interface GHLDomain {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Strips protocol, www., and path — returns null for non-domain strings */
-function normaliseDomain(raw: string | undefined | null): string | null {
+function normalizeDomain(raw: string | undefined | null): string | null {
   if (!raw || typeof raw !== "string") return null;
   const s = raw
     .trim()
@@ -32,16 +30,14 @@ function normaliseDomain(raw: string | undefined | null): string | null {
     .replace(/^https?:\/\//, "")
     .replace(/^www\./, "")
     .replace(/\/.*$/, "");
-  // Must contain a dot to be a real domain (not a slug like "evan-blog")
+  // Must contain a dot to be a real domain
   return s.includes(".") ? s : null;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Returns deduplicated domains for a location from two confirmed sources:
- *  – location.domain field
- *  – domain field on each redirect rule
+ * Returns deduplicated domains for a location from multiple GHL sources.
  */
 export async function fetchDomains(
   locationId: string,
@@ -52,22 +48,34 @@ export async function fetchDomains(
   const domains: GHLDomain[] = [];
 
   const add = (raw: string | undefined | null) => {
-    const host = normaliseDomain(raw);
+    const host = normalizeDomain(raw);
     if (!host || seen.has(host)) return;
     seen.add(host);
     domains.push({ id: host, domainName: host });
   };
 
-  // ── 1. Location's primary domain field ───────────────────────────────────
+  // 1. Location Profile
   try {
     const locResp = await client.get(`/locations/${locationId}`);
-    add(locResp.data?.location?.domain);
-  } catch {
-    // Non-fatal — continue to redirect rules
+    const loc = locResp.data?.location;
+    add(loc?.domain);
+
+    // Extract from website field too (e.g. https://zeon.studio)
+    const website = loc?.website;
+    if (website) {
+      try {
+        const url = new URL(website);
+        add(url.hostname);
+      } catch (e) {
+        // Fallback for non-URL strings like "zeon.studio"
+        add(website);
+      }
+    }
+  } catch (err) {
+    // Silent fail for location info
   }
 
-  // ── 2. Redirect rules — each carries the real connected domain name ───────
-  //    Max limit enforced by GHL is 20 per page.
+  // 2. Redirect Rules
   try {
     let offset = 0;
     const limit = 20;
@@ -76,19 +84,45 @@ export async function fetchDomains(
       const rdrResp = await client.get("/funnels/lookup/redirect/list", {
         params: { locationId, limit, offset },
       });
-
       const page: Array<{ domain?: string; deleted?: boolean }> =
         rdrResp.data?.data ?? rdrResp.data?.redirects ?? [];
 
       for (const r of page) {
-        if (!r.deleted) add(r.domain);
+        if (!r.deleted && r.domain) add(r.domain);
       }
 
-      if (page.length < limit) break; // last page
+      if (page.length < limit) break;
       offset += limit;
     }
-  } catch {
-    // Non-fatal
+  } catch (err) {
+    // Silent fail for redirects
+  }
+
+  // 3. Funnels & Websites
+  try {
+    const funnelsResp = await client.get("/funnels/funnel/list", {
+      params: { locationId },
+    });
+    const funnels = funnelsResp.data?.funnels ?? [];
+    for (const f of funnels) {
+      add(f.domain || f.domainId);
+    }
+  } catch (err) {
+    // Silent fail for funnels
+  }
+
+  // 4. Direct Domain List (if available in future/with more scopes)
+  try {
+    const domainsResp = await client.get("/funnels/lookup/domain/list", {
+      params: { locationId },
+    });
+    const direct = domainsResp.data?.data ?? domainsResp.data?.domains ?? [];
+    for (const d of direct) {
+      const name = typeof d === "string" ? d : (d.domainName || d.domain || d.name);
+      add(name);
+    }
+  } catch (err) {
+    // Silent fail for domain list
   }
 
   return domains;
@@ -103,11 +137,10 @@ export async function findDomainIdByName(
   accessToken: string,
 ): Promise<string | null> {
   const domains = await fetchDomains(locationId, accessToken);
-  const normalised = normaliseDomain(domainName) ?? "";
+  const normalized = normalizeDomain(domainName) ?? "";
 
   const match = domains.find(
-    (d) =>
-      d.domainName === normalised || normalised.endsWith(d.domainName),
+    (d) => d.domainName === normalized || normalized.endsWith(d.domainName),
   );
 
   return match ? match.id : null;
