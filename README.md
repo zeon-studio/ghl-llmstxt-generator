@@ -1,6 +1,4 @@
-# LLMS.txt Generator
-
-![llms.txt logo](/llms-logo.png)
+# LLMS.txt Generator for GHL
 
 Automatically generate and host a standards-compliant `llms.txt` file (following [llmstxt.org](https://llmstxt.org)) for your GoHighLevel sub-accounts. Make your funnels and pages discoverable by AI assistants like ChatGPT, Claude, and Perplexity in seconds.
 
@@ -36,8 +34,9 @@ GHL_REDIRECT_URI="http://localhost:3000/api/auth/callback"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 # Supabase Configuration
-SUPABASE_URL="your_supabase_url"
-SUPABASE_KEY="your_supabase_anon_or_service_role_key"
+NEXT_PUBLIC_SUPABASE_URL=""
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=""
+SUPABASE_SERVICE_ROLE_KEY=""
 ```
 
 ### 3. Database Setup
