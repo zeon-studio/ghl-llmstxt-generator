@@ -1,4 +1,4 @@
-# GHL llms.txt Plugin
+# LLMS.txt Generator
 
 ![llms.txt logo](/llms-logo.png)
 

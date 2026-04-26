@@ -2,7 +2,7 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 
 export const metadata = {
-  title: "Privacy Policy | GHL llms.txt Plugin",
+  title: "Privacy Policy | LLMS.txt Generator",
 };
 
 export default function PrivacyPage() {
@@ -31,7 +31,7 @@ export default function PrivacyPage() {
           </h2>
           <p>
             This Privacy Policy explains how we collect, use, and protect your
-            information when you use the GHL llms.txt Plugin. We are committed
+            information when you use the LLMS.txt Generator. We are committed
             to ensuring that your privacy is protected and that we comply with
             all relevant data protection laws.
           </p>

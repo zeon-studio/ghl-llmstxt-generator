@@ -12,7 +12,7 @@ import Link from "next/link";
 import { ModeToggle } from "@/components/mode-toggle";
 
 export const metadata: Metadata = {
-  title: "GHL llms.txt Plugin – AI-Ready Pages for GoHighLevel",
+  title: "LLMS.txt Generator – AI-Ready Pages for GoHighLevel",
   description:
     "Automatically scan your GoHighLevel funnels, generate a standards-compliant llms.txt file, and make your pages discoverable by AI assistants.",
 };
@@ -58,7 +58,7 @@ export default function LandingPage() {
         >
           <Image
             src="/icon.png"
-            alt="GHL llms.txt Plugin"
+            alt="LLMS.txt Generator"
             width={16}
             height={16}
             style={{ borderRadius: "2px" }}
@@ -72,7 +72,7 @@ export default function LandingPage() {
         </h1>
 
         <p className="text-muted-foreground text-lg max-w-lg">
-          This plugin scans all your GoHighLevel funnels and pages, generates a
+          This generator scans all your GoHighLevel funnels and pages, generates a
           standards-compliant <code>llms.txt</code> file following{" "}
           <a
             href="https://llmstxt.org"
@@ -146,7 +146,7 @@ export default function LandingPage() {
           >
             Terms of Service
           </Link>
-          <span>© 2026 GHL llms.txt Plugin</span>
+          <span>© 2026 LLMS.txt Generator</span>
         </footer>
       </div>
     </main>

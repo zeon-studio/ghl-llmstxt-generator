@@ -11,13 +11,13 @@ export function DashboardHeader({ session }: { session: GHLSession | null }) {
       <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
         <Image
           src="/icon.png"
-          alt="llms.txt"
+          alt="LLMS.txt Generator"
           width={32}
           height={32}
           className="w-8 h-8 rounded-md shadow-sm"
         />
         <span className="font-semibold text-lg hidden sm:inline-block tracking-tight">
-          llms.txt Generator
+          LLMS.txt Generator
         </span>
       </Link>
       <div className="flex items-center gap-4">
