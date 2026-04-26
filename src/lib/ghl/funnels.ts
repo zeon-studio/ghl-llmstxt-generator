@@ -13,6 +13,8 @@ export interface GHLFunnel {
   id: string;
   name: string;
   url?: string;
+  domain?: string;
+  domainName?: string;
   domainId?: string;
   isDeleted?: boolean;
   steps?: GHLFunnelStep[];
@@ -48,10 +50,10 @@ export interface FunnelWithPages extends GHLFunnel {
  */
 export async function discoverFunnelsAndPages(
   locationId: string,
-  accessToken: string
+  accessToken: string,
 ): Promise<FunnelWithPages[]> {
   const client = getGhlClient(accessToken);
-  
+
   const resp = await client.get("/funnels/funnel/list", {
     params: { locationId, limit: 100, offset: 0 },
   });
@@ -62,7 +64,7 @@ export async function discoverFunnelsAndPages(
     .filter((f: GHLFunnel & { _id?: string }) => !f.isDeleted)
     .map((f: GHLFunnel & { _id?: string }) => {
       const funnelId = f.id || f._id || "";
-      
+
       // Extract steps as pages
       const pages: GHLFunnelPage[] = (f.steps ?? [])
         .filter((s: GHLFunnelStep) => !s.isDeleted)

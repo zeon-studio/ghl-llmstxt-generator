@@ -1,8 +1,15 @@
-import { Status, GenerateResult } from "../types";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
+import { GenerateResult, Status } from "../types";
 
 interface PreviewCardProps {
   status: Status;
@@ -29,8 +36,7 @@ export function PreviewCard({
       <CardHeader>
         <CardTitle>Review llms.txt Content</CardTitle>
         <CardDescription>
-          Below is the generated content based on your funnels and pages.
-          Review it before pushing it to your site&apos;s media library.
+          Review the generated content. You can edit it before pushing to your media library.
         </CardDescription>
       </CardHeader>
 

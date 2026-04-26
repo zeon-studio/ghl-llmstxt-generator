@@ -18,8 +18,6 @@ import { GenerateResult, GHLSession, Status } from "./types";
 export default function DashboardPage() {
   const [status, setStatus] = useState<Status>("idle");
   const [session, setSession] = useState<GHLSession | null>(null);
-  const [siteName, setSiteName] = useState("");
-  const [siteDescription, setSiteDescription] = useState("");
   const [siteDomain, setSiteDomain] = useState("");
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [generatedContent, setGeneratedContent] = useState("");
@@ -68,8 +66,6 @@ export default function DashboardPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           locationId: session.locationId,
-          siteName: siteName.trim(),
-          siteDescription: siteDescription.trim() || undefined,
           domainId: siteDomain.trim(),
           baseUrl: siteDomain.trim().startsWith("http")
             ? siteDomain.trim()
@@ -150,12 +146,9 @@ export default function DashboardPage() {
         {(status === "ready" || status === "generating") && (
           <GenerateForm
             status={status}
+            locationId={session?.locationId ?? null}
             siteDomain={siteDomain}
             setSiteDomain={setSiteDomain}
-            siteName={siteName}
-            setSiteName={setSiteName}
-            siteDescription={siteDescription}
-            setSiteDescription={setSiteDescription}
             onGenerate={handleGenerate}
           />
         )}
