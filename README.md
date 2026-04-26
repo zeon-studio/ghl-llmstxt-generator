@@ -82,7 +82,7 @@ Follow the [Publishing Guide](.gemini/antigravity/brain/b4d7abea-e48c-404a-9807-
 GHL requires public URLs for:
 - **Privacy Policy:** [your-domain.com/privacy](/privacy)
 - **Terms of Service:** [your-domain.com/terms](/terms)
-- **Support Email:** `support@yourdomain.com`
+- **Support Email:** `zeonstudiohg@gmail.com`
 
 ### Scopes Required
 Ensure your app has the following scopes in the Developer Portal:
@@ -109,4 +109,7 @@ Ensure your app has the following scopes in the Developer Portal:
 ---
 
 ## 📄 License
-This project is private and intended for use with the GoHighLevel Marketplace.
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Developed with ❤️ by [Zeon Studio](https://zeon.studio).

@@ -46,8 +46,7 @@ export default function TermsPage() {
 
           <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">4. Intellectual Property</h2>
           <p>
-            All intellectual property rights in the software and the service are owned by the developers. 
-            You are granted a limited, non-exclusive license to use the service through the GoHighLevel marketplace.
+            The software is released under the MIT License. You are free to use, modify, and distribute the software in accordance with the license terms.
           </p>
 
           <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">5. Limitation of Liability</h2>

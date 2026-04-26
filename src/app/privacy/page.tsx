@@ -80,7 +80,7 @@ export default function PrivacyPage() {
           </h2>
           <p>
             If you have any questions about this Privacy Policy, please contact
-            us at themefisher@gmail.com.
+            us at zeonstudiohg@gmail.com.
           </p>
         </div>
       </div>

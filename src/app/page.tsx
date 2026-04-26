@@ -146,7 +146,7 @@ export default function LandingPage() {
           >
             Terms of Service
           </Link>
-          <span>© 2026 LLMS.txt Generator</span>
+          <span>© 2026 Zeon Studio</span>
         </footer>
       </div>
     </main>
