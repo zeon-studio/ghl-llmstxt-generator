@@ -36,11 +36,25 @@ export default function DashboardPage() {
 
     if (locationId) {
       localStorage.setItem("ghl_location_id", locationId);
-      const timer = setTimeout(() => {
-        setSession({ locationId, userId: "user" });
-        setStatus("ready");
-      }, 0);
-      return () => clearTimeout(timer);
+
+      // Fetch full session details (including locationName)
+      fetch(`/api/llms/session?locationId=${encodeURIComponent(locationId)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.session) {
+            setSession(data.session);
+            setStatus("ready");
+          } else {
+            // Fallback if session API fails (keep the ID at least)
+            setSession({ locationId, userId: "user" });
+            setStatus("ready");
+          }
+        })
+        .catch(() => {
+          setSession({ locationId, userId: "user" });
+          setStatus("ready");
+        });
+      return;
     }
 
     const timer = setTimeout(() => {

@@ -46,6 +46,7 @@ export interface TokenSession {
   userId?: string;
   companyId?: string;
   locationName?: string;
+  userName?: string;
   email?: string;
   phone?: string;
   address?: string;
@@ -115,6 +116,7 @@ export const sessionStorage = {
         user_id: session.userId || null,
         company_id: session.companyId || null,
         location_name: session.locationName || null,
+        user_name: session.userName || null,
         email: session.email || null,
         phone: session.phone || null,
         address: session.address || null,
@@ -149,6 +151,7 @@ export const sessionStorage = {
       userId: data.user_id,
       companyId: data.company_id,
       locationName: data.location_name,
+      userName: data.user_name,
       email: data.email,
       phone: data.phone,
       address: data.address,

@@ -4,6 +4,7 @@ export interface GHLSession {
   companyId?: string;
   userName?: string;
   email?: string;
+  locationName?: string;
 }
 
 export interface GenerateResult {

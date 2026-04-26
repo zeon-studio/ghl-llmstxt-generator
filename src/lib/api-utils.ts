@@ -5,12 +5,19 @@ import { sessionStorage } from "@/lib/ghl/client";
 export interface SessionData {
   locationId: string;
   accessToken: string;
+  locationName?: string;
+  userId?: string;
+  userName?: string;
+  email?: string;
 }
 
 /**
  * Wraps an API handler with standard error handling and formatting.
  */
-export function handleApiError(error: unknown, defaultMessage = "API request failed"): NextResponse {
+export function handleApiError(
+  error: unknown,
+  defaultMessage = "API request failed",
+): NextResponse {
   console.error("[API Error]", error);
 
   let status = 500;
@@ -27,25 +34,28 @@ export function handleApiError(error: unknown, defaultMessage = "API request fai
   }
 
   return NextResponse.json(
-    { 
+    {
       success: false,
-      error: message, 
-      details: details 
+      error: message,
+      details: details,
     },
-    { status }
+    { status },
   );
 }
 
 /**
  * Validates `locationId` and retrieves the active session.
  */
-export async function getActiveSession(locationId?: string): Promise<{ session?: SessionData; errorResponse?: NextResponse }> {
+export async function getActiveSession(locationId?: string): Promise<{
+  session?: SessionData;
+  errorResponse?: NextResponse;
+}> {
   if (!locationId) {
     return {
       errorResponse: NextResponse.json(
         { error: "locationId is required" },
-        { status: 400 }
-      )
+        { status: 400 },
+      ),
     };
   }
 
@@ -57,10 +67,19 @@ export async function getActiveSession(locationId?: string): Promise<{ session?:
           error: "No active session for this location. Please re-authorize.",
           code: "SESSION_NOT_FOUND",
         },
-        { status: 401 }
-      )
+        { status: 401 },
+      ),
     };
   }
 
-  return { session };
+  return {
+    session: {
+      locationId: session.locationId,
+      accessToken: session.accessToken,
+      locationName: session.locationName,
+      userId: session.userId,
+      userName: session.userName,
+      email: session.email,
+    },
+  };
 }

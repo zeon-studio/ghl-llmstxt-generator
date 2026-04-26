@@ -24,10 +24,10 @@ export function DashboardHeader({ session }: { session: GHLSession | null }) {
         {session && (
           <Badge
             variant="outline"
-            className="hidden sm:flex gap-1.5 px-3 py-1 bg-muted/50 font-mono text-xs"
+            className="hidden sm:flex gap-1.5 px-3 py-1 bg-muted/50 font-mono text-[10px] uppercase tracking-wider"
           >
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            {session.locationId}
+            {session.locationName || session.locationId}
           </Badge>
         )}
         <a
