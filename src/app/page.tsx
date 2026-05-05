@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+import { ModeToggle } from "@/components/mode-toggle";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -7,9 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
-import { ModeToggle } from "@/components/mode-toggle";
 
 export const metadata: Metadata = {
   title: "LLMS.txt Generator – AI-Ready Pages for Your CRM",
@@ -52,20 +50,6 @@ export default function LandingPage() {
       </div>
 
       <div className="max-w-2xl w-full flex flex-col items-center text-center gap-8 z-10">
-        <Badge
-          variant="secondary"
-          className="gap-2 px-3 py-1 text-sm font-medium"
-        >
-          <Image
-            src="/icon.png"
-            alt="LLMS.txt Generator"
-            width={16}
-            height={16}
-            style={{ borderRadius: "2px" }}
-          />
-          Marketplace App
-        </Badge>
-
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
           Make your website <br className="hidden sm:inline" />
           <span className="text-primary">AI-ready in seconds</span>
@@ -129,8 +113,7 @@ export default function LandingPage() {
         </div>
 
         <p className="text-sm text-muted-foreground mt-4">
-          Requires platform sub-account access · No data stored on our
-          servers
+          Requires platform sub-account access · No data stored on our servers
         </p>
 
         <footer className="mt-16 w-full flex items-center justify-center gap-6 pt-8 border-t text-sm text-muted-foreground">
