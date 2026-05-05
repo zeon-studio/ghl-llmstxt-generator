@@ -24,7 +24,7 @@ export function Onboarding() {
     {
       n: "3",
       title: "Push to Media Library",
-      desc: "Once generated, we'll upload the file to your GHL Media Storage and create a /llms.txt redirect automatically.",
+      desc: "Once generated, we'll upload the file to your Media Storage and create a /llms.txt redirect automatically.",
     },
   ];
 

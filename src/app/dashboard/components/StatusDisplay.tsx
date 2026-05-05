@@ -24,7 +24,7 @@ export function StatusDisplay({ status, errorMsg, session, onRetry }: StatusDisp
               href="/api/auth/ghl" 
               className={buttonVariants({ variant: "outline", className: "w-fit border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" })}
             >
-              Re-authorize with GoHighLevel
+              Re-authorize with Platform
             </a>
           )}
         </AlertDescription>

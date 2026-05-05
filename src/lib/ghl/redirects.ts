@@ -111,7 +111,7 @@ export async function createLlmsRedirect(
           };
         } else {
           console.warn("[Redirect] Could not find the existing rule in the URL redirects list. It might be attached directly to a Funnel or Website page.");
-          throw new Error("Conflict: The path '/llms.txt' is currently being used by a Funnel or Website page in your GoHighLevel account. Please delete or rename that page's path in the GHL dashboard so we can create the redirect.");
+          throw new Error("Conflict: The path '/llms.txt' is currently being used by a Funnel or Website page in your account. Please delete or rename that page's path in the dashboard so we can create the redirect.");
         }
       }
     }

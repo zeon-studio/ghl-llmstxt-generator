@@ -44,7 +44,7 @@ export default function PrivacyPage() {
           </p>
           <ul className="list-disc pl-6 space-y-2 mt-2">
             <li>
-              <strong className="text-foreground">GoHighLevel Account Information:</strong> When you connect
+              <strong className="text-foreground">CRM Account Information:</strong> When you connect
               your sub-account, we receive an OAuth token and basic location
               details (ID, name).
             </li>
@@ -59,7 +59,7 @@ export default function PrivacyPage() {
           </h2>
           <p>
             We use your information exclusively to facilitate the generation,
-            hosting, and management of llms.txt files within your GoHighLevel
+            hosting, and management of llms.txt files within your CRM
             account.
             <strong className="text-foreground"> We do not sell your data to third parties.</strong>
           </p>
@@ -69,10 +69,10 @@ export default function PrivacyPage() {
           </h2>
           <p>
             As stated in our landing page, we prioritize a
-            &quot;no-data-stored&quot; approach where possible. Your GoHighLevel
+            &quot;no-data-stored&quot; approach where possible. Your CRM
             session tokens are stored securely in our database to allow the
-            application to function inside the GHL iframe. You can revoke access
-            at any time through the GoHighLevel marketplace.
+            application to function inside the iframe. You can revoke access
+            at any time through the marketplace.
           </p>
 
           <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">

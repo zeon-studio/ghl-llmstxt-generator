@@ -11,7 +11,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "LLMS.txt Generator",
   description:
-    "Automatically generate and host a standards-compliant llms.txt file for your GoHighLevel sub-account.",
+    "Automatically generate and host a standards-compliant llms.txt file for your CRM sub-account.",
   icons: {
     icon: "/icon.png",
   },

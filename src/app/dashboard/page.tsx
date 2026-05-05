@@ -59,7 +59,7 @@ export default function DashboardPage() {
 
     const timer = setTimeout(() => {
       setErrorMsg(
-        "Could not obtain location context. Ensure the page is opened from within GoHighLevel.",
+        "Could not obtain location context. Ensure the page is opened from within the CRM.",
       );
       setStatus("error");
     }, 0);

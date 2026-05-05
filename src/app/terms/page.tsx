@@ -34,7 +34,7 @@ export default function TermsPage() {
 
           <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">2. Description of Service</h2>
           <p>
-            The Service provides automation tools for GoHighLevel users to generate and host llms.txt files. 
+            The Service provides automation tools for users to generate and host llms.txt files. 
             We provide the software &quot;as is&quot; and make no guarantees regarding uptime or specific performance outcomes.
           </p>
 

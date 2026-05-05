@@ -12,9 +12,9 @@ import Link from "next/link";
 import { ModeToggle } from "@/components/mode-toggle";
 
 export const metadata: Metadata = {
-  title: "LLMS.txt Generator – AI-Ready Pages for GoHighLevel",
+  title: "LLMS.txt Generator – AI-Ready Pages for Your CRM",
   description:
-    "Automatically scan your GoHighLevel funnels, generate a standards-compliant llms.txt file, and make your pages discoverable by AI assistants.",
+    "Automatically scan your CRM funnels, generate a standards-compliant llms.txt file, and make your pages discoverable by AI assistants.",
 };
 
 const STEPS = [
@@ -36,7 +36,7 @@ const STEPS = [
   {
     n: 4,
     title: "Auto-host & redirect",
-    desc: "Uploaded to GHL Media Storage with a /llms.txt 301 redirect.",
+    desc: "Uploaded to your Media Storage with a /llms.txt 301 redirect.",
   },
 ];
 
@@ -63,16 +63,16 @@ export default function LandingPage() {
             height={16}
             style={{ borderRadius: "2px" }}
           />
-          GoHighLevel Marketplace App
+          Marketplace App
         </Badge>
 
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
-          Make your GHL site <br className="hidden sm:inline" />
+          Make your website <br className="hidden sm:inline" />
           <span className="text-primary">AI-ready in seconds</span>
         </h1>
 
         <p className="text-muted-foreground text-lg max-w-lg">
-          This generator scans all your GoHighLevel funnels and pages, generates a
+          This generator scans all your funnels and pages, generates a
           standards-compliant <code>llms.txt</code> file following{" "}
           <a
             href="https://llmstxt.org"
@@ -93,7 +93,7 @@ export default function LandingPage() {
               className: "px-8 font-semibold",
             })}
           >
-            Connect GoHighLevel
+            Connect Platform
           </a>
           <Link
             href="/dashboard"
@@ -129,7 +129,7 @@ export default function LandingPage() {
         </div>
 
         <p className="text-sm text-muted-foreground mt-4">
-          Requires GoHighLevel sub-account access · No data stored on our
+          Requires platform sub-account access · No data stored on our
           servers
         </p>
 
