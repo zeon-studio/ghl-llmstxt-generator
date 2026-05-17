@@ -8,6 +8,9 @@
 
 import HighLevel from "@gohighlevel/api-client";
 import axios, { AxiosInstance } from "axios";
+import fs from "fs";
+import path from "path";
+import os from "os";
 
 export const API_BASE = "https://services.leadconnectorhq.com";
 
@@ -103,78 +106,131 @@ async function refreshAccessToken(
   return newSession;
 }
 
+const LOCAL_STORAGE_FILE = path.join(os.tmpdir(), ".ghl-sessions.json");
+
+function readLocalSessions(): Record<string, TokenSession> {
+  try {
+    if (fs.existsSync(LOCAL_STORAGE_FILE)) {
+      const data = fs.readFileSync(LOCAL_STORAGE_FILE, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.error("[LocalStorage] Error reading local sessions:", err);
+  }
+  return {};
+}
+
+function writeLocalSession(locationId: string, session: TokenSession) {
+  try {
+    const sessions = readLocalSessions();
+    sessions[locationId] = session;
+    fs.writeFileSync(LOCAL_STORAGE_FILE, JSON.stringify(sessions, null, 2), "utf-8");
+  } catch (err) {
+    console.error("[LocalStorage] Error writing local session:", err);
+  }
+}
+
+function deleteLocalSession(locationId: string) {
+  try {
+    const sessions = readLocalSessions();
+    if (sessions[locationId]) {
+      delete sessions[locationId];
+      fs.writeFileSync(LOCAL_STORAGE_FILE, JSON.stringify(sessions, null, 2), "utf-8");
+    }
+  } catch (err) {
+    console.error("[LocalStorage] Error deleting local session:", err);
+  }
+}
+
 export const sessionStorage = {
   async set(locationId: string, session: TokenSession): Promise<void> {
     console.log(`[Supabase] Attempting to save session for location: ${locationId}`);
     
-    const { error } = await supabase.from("sessions").upsert(
-      {
-        location_id: locationId,
-        access_token: session.accessToken,
-        refresh_token: session.refreshToken,
-        expires_at: session.expiresAt,
-        user_id: session.userId || null,
-        company_id: session.companyId || null,
-        location_name: session.locationName || null,
-        email: session.email || null,
-        phone: session.phone || null,
-        address: session.address || null,
-        city: session.city || null,
-        country: session.country || null,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "location_id" },
-    );
+    writeLocalSession(locationId, session);
 
-    if (error) {
-      console.error("[Supabase] Error saving session:", {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      });
-    } else {
-      console.log(`[Supabase] Session saved successfully for ${locationId}`);
+    try {
+      const { error } = await supabase.from("sessions").upsert(
+        {
+          location_id: locationId,
+          access_token: session.accessToken,
+          refresh_token: session.refreshToken,
+          expires_at: session.expiresAt,
+          user_id: session.userId || null,
+          company_id: session.companyId || null,
+          location_name: session.locationName || null,
+          email: session.email || null,
+          phone: session.phone || null,
+          address: session.address || null,
+          city: session.city || null,
+          country: session.country || null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "location_id" },
+      );
+
+      if (error) {
+        console.error("[Supabase] Error saving session:", {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+      } else {
+        console.log(`[Supabase] Session saved successfully for ${locationId}`);
+      }
+    } catch (e) {
+      console.error("[Supabase] Exception saving session:", e);
     }
   },
 
   async get(locationId: string): Promise<TokenSession | undefined> {
     console.log(`[Supabase] Fetching session for location: ${locationId}`);
     
-    const { data, error } = await supabase
-      .from("sessions")
-      .select("*")
-      .eq("location_id", locationId)
-      .single();
+    let session: TokenSession | undefined;
 
-    if (error) {
-      if (error.code === "PGRST116") {
-        console.warn(`[Supabase] No session found in DB for location: ${locationId}`);
-      } else {
-        console.error("[Supabase] Error fetching session:", error);
+    try {
+      const { data, error } = await supabase
+        .from("sessions")
+        .select("*")
+        .eq("location_id", locationId)
+        .single();
+
+      if (error) {
+        if (error.code === "PGRST116") {
+          console.warn(`[Supabase] No session found in DB for location: ${locationId}`);
+        } else {
+          console.error("[Supabase] Error fetching session:", error);
+        }
+      } else if (data) {
+        session = {
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+          expiresAt: Number(data.expires_at),
+          locationId: data.location_id,
+          userId: data.user_id,
+          companyId: data.company_id,
+          locationName: data.location_name,
+          email: data.email,
+          phone: data.phone,
+          address: data.address,
+          city: data.city,
+          country: data.country,
+        };
       }
-      return undefined;
+    } catch (e) {
+      console.error("[Supabase] Exception fetching session:", e);
     }
 
-    if (!data) {
-      console.warn(`[Supabase] Session data is empty for location: ${locationId}`);
-      return undefined;
+    if (!session) {
+      console.log(`[LocalStorage] Falling back to local storage for location: ${locationId}`);
+      const localSessions = readLocalSessions();
+      session = localSessions[locationId];
     }
 
-    let session: TokenSession = {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      expiresAt: Number(data.expires_at),
-      locationId: data.location_id,
-      userId: data.user_id,
-      companyId: data.company_id,
-      locationName: data.location_name,
-      email: data.email,
-      phone: data.phone,
-      address: data.address,
-      city: data.city,
-      country: data.country,
-    };
+    if (!session) {
+      console.warn(`[Session] Session data is empty for location: ${locationId}`);
+      return undefined;
+    }
 
     // Auto-refresh if token is expired or expires within 5 minutes
     if (Date.now() + 5 * 60 * 1000 >= session.expiresAt) {
@@ -193,24 +249,38 @@ export const sessionStorage = {
   },
 
   async delete(locationId: string): Promise<void> {
-    const { error } = await supabase
-      .from("sessions")
-      .delete()
-      .eq("location_id", locationId);
+    deleteLocalSession(locationId);
 
-    if (error) {
-      console.error("Failed to delete session from Supabase:", error);
+    try {
+      const { error } = await supabase
+        .from("sessions")
+        .delete()
+        .eq("location_id", locationId);
+
+      if (error) {
+        console.error("Failed to delete session from Supabase:", error);
+      }
+    } catch (e) {
+      console.error("Exception deleting session from Supabase:", e);
     }
   },
 
   async keys(): Promise<string[]> {
-    const { data, error } = await supabase
-      .from("sessions")
-      .select("location_id");
-    if (error || !data) {
-      return [];
+    const localSessions = readLocalSessions();
+    const keys = new Set<string>(Object.keys(localSessions));
+
+    try {
+      const { data, error } = await supabase
+        .from("sessions")
+        .select("location_id");
+      if (!error && data) {
+        data.forEach((row) => keys.add(row.location_id));
+      }
+    } catch (e) {
+      console.error("Exception fetching session keys from Supabase:", e);
     }
-    return data.map((row) => row.location_id);
+
+    return Array.from(keys);
   },
 };
 
