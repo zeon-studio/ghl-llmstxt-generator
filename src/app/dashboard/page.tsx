@@ -9,10 +9,10 @@
 import { useEffect, useState } from "react";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { GenerateForm } from "./components/GenerateForm";
+import { Onboarding } from "./components/Onboarding";
 import { PreviewCard } from "./components/PreviewCard";
 import { ResultCard } from "./components/ResultCard";
 import { StatusDisplay } from "./components/StatusDisplay";
-import { Onboarding } from "./components/Onboarding";
 import { GenerateResult, GHLSession, Status } from "./types";
 
 export default function DashboardPage() {
@@ -186,6 +186,14 @@ export default function DashboardPage() {
           siteDomain={siteDomain}
         />
       </div>
+
+      <footer className="w-full text-center py-4 text-sm text-muted-foreground">
+        Built by{" "}
+        <a href="https://zeon.studio" target="_blank" rel="noopener">
+          Zeon Studio
+        </a>
+        . Marketing Automation Agency
+      </footer>
     </main>
   );
 }

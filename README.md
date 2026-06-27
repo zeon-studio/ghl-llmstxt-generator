@@ -17,11 +17,13 @@ Automatically generate and host a standards-compliant `llms.txt` file (following
 ## 🛠 Setup & Installation
 
 ### 1. Prerequisites
+
 - A GoHighLevel Developer Account.
 - A Supabase Project (for session storage).
 - An app created in the [GHL Marketplace](https://marketplace.gohighlevel.com/).
 
 ### 2. Environment Variables
+
 Create a `.env` file in the root directory (use `.env.example` as a template):
 
 ```env
@@ -40,16 +42,19 @@ SUPABASE_SERVICE_ROLE_KEY=""
 ```
 
 ### 3. Database Setup
+
 1. Go to your **Supabase Dashboard** -> **SQL Editor**.
 2. Copy the contents of `supabase_schema.sql` (found in the root of this project).
 3. Run the script to create the `sessions` table.
 
 ### 4. Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### 4. Run Development Server
+
 ```bash
 npm run dev
 ```
@@ -59,6 +64,7 @@ npm run dev
 ## 🧪 Testing the App
 
 ### Manual Testing (Local)
+
 1. **Initialize OAuth:** Open `http://localhost:3000` and click **"Connect GoHighLevel"**.
 2. **Authorize:** Select a GHL sub-account and authorize the app.
 3. **Dashboard Access:** After redirect, you'll land on `/dashboard`.
@@ -66,7 +72,9 @@ npm run dev
 5. **Verify:** Check your GHL Media Library for the new `llms.txt` file and verify the redirect in your domain settings.
 
 ### GHL Iframe Testing (SSO)
+
 To test the SSO logic inside the GHL UI:
+
 1. Go to your **GHL Marketplace App Settings**.
 2. Set the **Iframe URL** to `http://localhost:3000/dashboard`.
 3. Open a GHL Sub-account → **Settings** → **Custom Pages**.
@@ -79,13 +87,17 @@ To test the SSO logic inside the GHL UI:
 Follow the [Publishing Guide](.gemini/antigravity/brain/b4d7abea-e48c-404a-9807-e3cab6b9e32e/publishing_guide.md.resolved) for full details.
 
 ### Required Documentation
+
 GHL requires public URLs for:
+
 - **Privacy Policy:** [your-domain.com/privacy](/privacy)
 - **Terms of Service:** [your-domain.com/terms](/terms)
-- **Support Email:** `zeonstudiohg@gmail.com`
+- **Support Email:** `zeonstudiohq@gmail.com`
 
 ### Scopes Required
+
 Ensure your app has the following scopes in the Developer Portal:
+
 - `funnels/funnel.readonly`
 - `funnels/page.readonly`
 - `funnels/redirect.readonly`

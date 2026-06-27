@@ -34,7 +34,7 @@ export function DashboardHeader({ session }: { session: GHLSession | null }) {
           </Badge>
         )}
         <a
-          href="mailto:zeonstudiohg@gmail.com"
+          href="mailto:zeonstudiohq@gmail.com"
           className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
         >
           <Mail className="w-4 h-4" />

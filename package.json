@@ -2,7 +2,7 @@
   "name": "ghl-llms-txt-generator",
   "version": "0.1.0",
   "private": false,
-  "author": "Zeon Studio <zeonstudiohg@gmail.com> (https://zeon.studio)",
+  "author": "Zeon Studio <zeonstudiohq@gmail.com> (https://zeon.studio)",
   "license": "MIT",
   "scripts": {
     "dev": "next dev",

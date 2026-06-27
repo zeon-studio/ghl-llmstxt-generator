@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
+import Link from "next/link";
 
 export const metadata = {
   title: "Privacy Policy | LLMS.txt Generator",
@@ -24,16 +24,18 @@ export default function PrivacyPage() {
         </h1>
 
         <div className="text-muted-foreground w-full space-y-6">
-          <p className="font-medium text-foreground">Last Updated: April 25, 2026</p>
+          <p className="font-medium text-foreground">
+            Last Updated: April 25, 2026
+          </p>
 
           <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
             1. Introduction
           </h2>
           <p>
             This Privacy Policy explains how we collect, use, and protect your
-            information when you use the LLMS.txt Generator. We are committed
-            to ensuring that your privacy is protected and that we comply with
-            all relevant data protection laws.
+            information when you use the LLMS.txt Generator. We are committed to
+            ensuring that your privacy is protected and that we comply with all
+            relevant data protection laws.
           </p>
 
           <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
@@ -44,13 +46,16 @@ export default function PrivacyPage() {
           </p>
           <ul className="list-disc pl-6 space-y-2 mt-2">
             <li>
-              <strong className="text-foreground">CRM Account Information:</strong> When you connect
-              your sub-account, we receive an OAuth token and basic location
-              details (ID, name).
+              <strong className="text-foreground">
+                CRM Account Information:
+              </strong>{" "}
+              When you connect your sub-account, we receive an OAuth token and
+              basic location details (ID, name).
             </li>
             <li>
-              <strong className="text-foreground">Usage Data:</strong> We may collect metadata about the
-              llms.txt files generated, such as timestamps and domain names.
+              <strong className="text-foreground">Usage Data:</strong> We may
+              collect metadata about the llms.txt files generated, such as
+              timestamps and domain names.
             </li>
           </ul>
 
@@ -59,9 +64,11 @@ export default function PrivacyPage() {
           </h2>
           <p>
             We use your information exclusively to facilitate the generation,
-            hosting, and management of llms.txt files within your CRM
-            account.
-            <strong className="text-foreground"> We do not sell your data to third parties.</strong>
+            hosting, and management of llms.txt files within your CRM account.
+            <strong className="text-foreground">
+              {" "}
+              We do not sell your data to third parties.
+            </strong>
           </p>
 
           <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
@@ -69,10 +76,10 @@ export default function PrivacyPage() {
           </h2>
           <p>
             As stated in our landing page, we prioritize a
-            &quot;no-data-stored&quot; approach where possible. Your CRM
-            session tokens are stored securely in our database to allow the
-            application to function inside the iframe. You can revoke access
-            at any time through the marketplace.
+            &quot;no-data-stored&quot; approach where possible. Your CRM session
+            tokens are stored securely in our database to allow the application
+            to function inside the iframe. You can revoke access at any time
+            through the marketplace.
           </p>
 
           <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
@@ -80,7 +87,7 @@ export default function PrivacyPage() {
           </h2>
           <p>
             If you have any questions about this Privacy Policy, please contact
-            us at zeonstudiohg@gmail.com.
+            us at zeonstudiohq@gmail.com.
           </p>
         </div>
       </div>
