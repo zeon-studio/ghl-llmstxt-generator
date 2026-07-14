@@ -67,7 +67,7 @@ export interface TokenResponse {
 
 // ─── Supabase Session Storage ────────────────────────────────────────────────
 
-import { supabase } from "../supabase/client";
+import { db } from "../db/client";
 
 const GHL_API_BASE = API_BASE;
 
@@ -149,37 +149,43 @@ export const sessionStorage = {
     writeLocalSession(locationId, session);
 
     try {
-      const { error } = await supabase.from("sessions").upsert(
-        {
-          location_id: locationId,
-          access_token: session.accessToken,
-          refresh_token: session.refreshToken,
-          expires_at: session.expiresAt,
-          user_id: session.userId || null,
-          company_id: session.companyId || null,
-          location_name: session.locationName || null,
-          email: session.email || null,
-          phone: session.phone || null,
-          address: session.address || null,
-          city: session.city || null,
-          country: session.country || null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "location_id" },
+      await db.query(
+        `INSERT INTO sessions (
+          location_id, access_token, refresh_token, expires_at,
+          user_id, company_id, location_name, email, phone, address, city, country, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        ON CONFLICT (location_id) DO UPDATE SET
+          access_token = EXCLUDED.access_token,
+          refresh_token = EXCLUDED.refresh_token,
+          expires_at = EXCLUDED.expires_at,
+          user_id = EXCLUDED.user_id,
+          company_id = EXCLUDED.company_id,
+          location_name = EXCLUDED.location_name,
+          email = EXCLUDED.email,
+          phone = EXCLUDED.phone,
+          address = EXCLUDED.address,
+          city = EXCLUDED.city,
+          country = EXCLUDED.country,
+          updated_at = EXCLUDED.updated_at`,
+        [
+          locationId,
+          session.accessToken,
+          session.refreshToken,
+          session.expiresAt,
+          session.userId || null,
+          session.companyId || null,
+          session.locationName || null,
+          session.email || null,
+          session.phone || null,
+          session.address || null,
+          session.city || null,
+          session.country || null,
+          new Date().toISOString(),
+        ],
       );
-
-      if (error) {
-        console.error("[Supabase] Error saving session:", {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        });
-      } else {
-        console.log(`[Supabase] Session saved successfully for ${locationId}`);
-      }
+      console.log(`[DB] Session saved successfully for ${locationId}`);
     } catch (e) {
-      console.error("[Supabase] Exception saving session:", e);
+      console.error("[DB] Exception saving session:", e);
     }
   },
 
@@ -189,19 +195,15 @@ export const sessionStorage = {
     let session: TokenSession | undefined;
 
     try {
-      const { data, error } = await supabase
-        .from("sessions")
-        .select("*")
-        .eq("location_id", locationId)
-        .single();
+      const { rows } = await db.query(
+        "SELECT * FROM sessions WHERE location_id = $1",
+        [locationId],
+      );
+      const data = rows[0];
 
-      if (error) {
-        if (error.code === "PGRST116") {
-          console.warn(`[Supabase] No session found in DB for location: ${locationId}`);
-        } else {
-          console.error("[Supabase] Error fetching session:", error);
-        }
-      } else if (data) {
+      if (!data) {
+        console.warn(`[DB] No session found in DB for location: ${locationId}`);
+      } else {
         session = {
           accessToken: data.access_token,
           refreshToken: data.refresh_token,
@@ -218,7 +220,7 @@ export const sessionStorage = {
         };
       }
     } catch (e) {
-      console.error("[Supabase] Exception fetching session:", e);
+      console.error("[DB] Exception fetching session:", e);
     }
 
     if (!session) {
@@ -252,16 +254,9 @@ export const sessionStorage = {
     deleteLocalSession(locationId);
 
     try {
-      const { error } = await supabase
-        .from("sessions")
-        .delete()
-        .eq("location_id", locationId);
-
-      if (error) {
-        console.error("Failed to delete session from Supabase:", error);
-      }
+      await db.query("DELETE FROM sessions WHERE location_id = $1", [locationId]);
     } catch (e) {
-      console.error("Exception deleting session from Supabase:", e);
+      console.error("Exception deleting session from DB:", e);
     }
   },
 
@@ -270,14 +265,10 @@ export const sessionStorage = {
     const keys = new Set<string>(Object.keys(localSessions));
 
     try {
-      const { data, error } = await supabase
-        .from("sessions")
-        .select("location_id");
-      if (!error && data) {
-        data.forEach((row) => keys.add(row.location_id));
-      }
+      const { rows } = await db.query("SELECT location_id FROM sessions");
+      rows.forEach((row) => keys.add(row.location_id));
     } catch (e) {
-      console.error("Exception fetching session keys from Supabase:", e);
+      console.error("Exception fetching session keys from DB:", e);
     }
 
     return Array.from(keys);
