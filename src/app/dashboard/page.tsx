@@ -11,6 +11,7 @@ import { DashboardHeader } from "./components/DashboardHeader";
 import { GenerateForm } from "./components/GenerateForm";
 import { Onboarding } from "./components/Onboarding";
 import { PreviewCard } from "./components/PreviewCard";
+import { PromoCard } from "./components/PromoCard";
 import { ResultCard } from "./components/ResultCard";
 import { StatusDisplay } from "./components/StatusDisplay";
 import { GenerateResult, GHLSession, Status } from "./types";
@@ -148,43 +149,61 @@ export default function DashboardPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
+  const isSidebarVisible = status === "ready" || status === "generating";
+
   return (
     <main className="min-h-screen bg-background flex flex-col">
       <DashboardHeader session={session} />
 
-      <div className="flex-1 flex flex-col items-center justify-start p-4 md:p-8 gap-6 w-full max-w-4xl mx-auto">
+      <div className={`flex-1 w-full p-4 md:p-8 flex flex-col gap-6 mx-auto transition-all duration-300 ${
+        isSidebarVisible ? "max-w-6xl" : "max-w-4xl"
+      }`}>
         <StatusDisplay status={status} errorMsg={errorMsg} session={session} />
 
-        {status === "ready" && <Onboarding />}
+        <div className={`w-full items-start gap-6 ${
+          isSidebarVisible
+            ? "grid grid-cols-1 lg:grid-cols-[1fr,360px]"
+            : "flex flex-col"
+        }`}>
+          <div className="flex flex-col gap-6 w-full">
+            {status === "ready" && <Onboarding />}
 
-        {(status === "ready" || status === "generating") && (
-          <GenerateForm
-            status={status}
-            locationId={session?.locationId ?? null}
-            siteDomain={siteDomain}
-            setSiteDomain={setSiteDomain}
-            onGenerate={handleGenerate}
-          />
-        )}
+            {(status === "ready" || status === "generating") && (
+              <GenerateForm
+                status={status}
+                locationId={session?.locationId ?? null}
+                siteDomain={siteDomain}
+                setSiteDomain={setSiteDomain}
+                onGenerate={handleGenerate}
+              />
+            )}
 
-        {(status === "previewing" || status === "pushing") && (
-          <PreviewCard
-            status={status}
-            result={result}
-            generatedContent={generatedContent}
-            setGeneratedContent={setGeneratedContent}
-            onPush={handlePushToMedia}
-            onCancel={resetPipeline}
-          />
-        )}
+            {(status === "previewing" || status === "pushing") && (
+              <PreviewCard
+                status={status}
+                result={result}
+                generatedContent={generatedContent}
+                setGeneratedContent={setGeneratedContent}
+                onPush={handlePushToMedia}
+                onCancel={resetPipeline}
+              />
+            )}
 
-        <ResultCard
-          status={status}
-          result={result}
-          errorMsg={errorMsg}
-          onReset={resetPipeline}
-          siteDomain={siteDomain}
-        />
+            <ResultCard
+              status={status}
+              result={result}
+              errorMsg={errorMsg}
+              onReset={resetPipeline}
+              siteDomain={siteDomain}
+            />
+          </div>
+
+          {isSidebarVisible && (
+            <aside className="w-full lg:sticky lg:top-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <PromoCard />
+            </aside>
+          )}
+        </div>
       </div>
 
       <footer className="w-full text-center py-4 text-sm text-muted-foreground">
