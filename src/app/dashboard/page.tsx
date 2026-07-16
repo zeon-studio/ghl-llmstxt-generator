@@ -162,7 +162,7 @@ export default function DashboardPage() {
 
         <div className={`w-full items-start gap-6 ${
           isSidebarVisible
-            ? "grid grid-cols-1 lg:grid-cols-[1fr,360px]"
+            ? "grid grid-cols-1 md:grid-cols-[1fr,360px]"
             : "flex flex-col"
         }`}>
           <div className="flex flex-col gap-6 w-full">
@@ -199,7 +199,7 @@ export default function DashboardPage() {
           </div>
 
           {isSidebarVisible && (
-            <aside className="w-full lg:sticky lg:top-4 animate-in fade-in slide-in-from-right-4 duration-300">
+            <aside className="w-full md:sticky md:top-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <PromoCard />
             </aside>
           )}
